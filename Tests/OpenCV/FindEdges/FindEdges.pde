@@ -6,7 +6,7 @@ PImage src, processedImage, cannyImage, contoursImage;
 ArrayList<Contour> contours;
 
 void setup() {
-  src = loadImage("test.jpg");
+  src = loadImage("after4.jpg");
   size(src.width, src.height, P2D);
   
   opencv = new OpenCV(this, src);
@@ -14,7 +14,7 @@ void setup() {
   opencv.setGray(opencv.getS().clone());
   opencv.threshold(95);
   opencv.erode();
-  opencv.invert();
+  //opencv.invert();
   processedImage = opencv.getSnapshot();
   
   // Contours
@@ -33,6 +33,8 @@ void setup() {
   cannyImage = opencv.getSnapshot();
   
   displayImages();
+  
+  println("width: " + src.width + ", height: " + src.height);
 }
 
 

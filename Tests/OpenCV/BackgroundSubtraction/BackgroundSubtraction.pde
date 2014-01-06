@@ -3,27 +3,30 @@
 import gab.opencv.*;
 import processing.video.*;
 
-Capture video;
+Movie video;
 OpenCV opencv;
 
 void setup() {
-  video = new Capture(this, 640, 480);
-  opencv = new OpenCV(this, video.width, video.height);
-  size(video.width, video.height, P2D);
+  size(720, 480, P2D);
+  video = new Movie(this, "street.mov");
+  opencv = new OpenCV(this, 720, 480);
   
-  opencv.startBackgroundSubtraction(0, 3, 0.5);
+  opencv.startBackgroundSubtraction(5, 3, 0.5);
   
-  video.start();
+  video.loop();
+  video.play();
 }
 
 void draw() {
   image(video, 0, 0);  
   opencv.loadImage(video);
+  
   opencv.updateBackground();
   
   opencv.dilate();
   opencv.erode();
   
+  //image(opencv.getSnapshot(), 0, 0);
   noFill();
   stroke(255, 0, 0);
   strokeWeight(3);
@@ -32,6 +35,6 @@ void draw() {
   }
 }
 
-void captureEvent(Capture m) {
+void movieEvent(Movie m) {
   m.read();
 }
