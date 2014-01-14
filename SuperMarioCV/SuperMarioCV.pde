@@ -1,7 +1,7 @@
 import gab.opencv.*;
 import java.awt.Rectangle;
 
-boolean test = false;
+boolean test = true;
 
 int screenWidth = 512;
 int screenHeight = 432;
@@ -25,8 +25,11 @@ ArrayList<Rectangle> stageElements;
 
 void setup() {
 
-  stage = new StageDetector(this, "after4.jpg");
+  //stage = new StageDetector(this, "after4.jpg");
   //stage = new StageDetector(this, 640, 480, CAPTURE);
+  stage = new StageDetector(this, 640, 480);
+  stage.setSource(CAPTURE);
+  stage.setMethod(EDGES);
 
   screenWidth = int(scaleFactor*stage.width);
   screenHeight = int(scaleFactor*stage.height);
@@ -52,7 +55,8 @@ void draw() {
   stage.displayBackground();
   if (test) stage.displayContours();
   popMatrix();
-
+  
+  // to do
   activeScreen.draw(); 
   SoundManager.draw();
 }
@@ -84,12 +88,21 @@ void resetGame() {
 
 void keyPressed() { 
   activeScreen.keyPressed(key, keyCode); 
-
+  
   if (key == ENTER) {
+    stage.initBackground();
+  } else if (key == ' ') {
     println(">>>>> DETECT!");
+    stage.initStage();
     stageElements = scaleRectanglesArray(stage.detect(), scaleFactor);
     resetGame();
   }
+  
+  /*if (key == ENTER) {
+    println(">>>>> DETECT!");
+    stageElements = scaleRectanglesArray(stage.detect(), scaleFactor);
+    resetGame();
+  }*/
 }
 
 void keyReleased() { 

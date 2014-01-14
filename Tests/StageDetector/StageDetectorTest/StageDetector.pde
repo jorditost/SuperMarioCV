@@ -3,9 +3,14 @@ import SimpleOpenNI.*;
 import java.awt.Rectangle;
 import processing.video.*;
 
-static int STATIC  = 1;
-static int CAPTURE = 2;
-static int KINECT  = 3;
+// Video Source
+static int STATIC     = 1;
+static int CAPTURE    = 2;
+static int KINECT     = 3;
+
+// Detection method
+static int EDGES      = 1;
+static int IMAGE_DIFF = 2;
 
 class StageDetector {
   
@@ -15,18 +20,21 @@ class StageDetector {
   SimpleOpenNI kinect;
   Capture video;
   
-  int source;
+  int source = CAPTURE;
+  int method = EDGES;
   
-  private PImage background;
+  private PImage background, stage;
   private ArrayList<Contour> contours;
   private ArrayList<Rectangle> stageElements;
   public int width, height;
   
-  StageDetector(PApplet theParent, int requestWidth, int requestHeight, int theSource) {
+  Boolean backgroundInitialized = false;
+  Boolean stageInitialized = false;
+  
+  StageDetector(PApplet theParent, int requestWidth, int requestHeight) {
     
     parent = theParent;
-    source = theSource;
-     
+    
     width = requestWidth;
     height = requestHeight;
     
@@ -45,6 +53,8 @@ class StageDetector {
     
     parent = theParent;
     
+    source = STATIC;
+    
     background = loadImage(imageSrc);
    
     width = background.width;
@@ -52,31 +62,76 @@ class StageDetector {
     
     opencv = new OpenCV(parent, background);
     //opencv = new OpenCV(parent, width, height);
-    
-    source = STATIC;
   }
+  
+  void setSource(int theSource) {
+    source = theSource;
+  }
+  
+  void setMethod(int theMethod) {
+    method = theMethod;
+  }
+  
   
   // Detect stage elements
   // Returns an array with bounding boxes
   public ArrayList<Rectangle> detect() {
     
-    if (source == CAPTURE && video.available()) {
-      video.read();
-      //opencv.useColor();
-      opencv.loadImage(video);
-      background = opencv.getSnapshot();
+    if (method == EDGES) {
+      
+      if (source == CAPTURE && video.available()) {
+        video.read();
+        //opencv.useColor();
+        opencv.loadImage(video);
+        background = opencv.getSnapshot();
+      
+      } else if (source == KINECT && kinect != null) {
+        kinect.update();
+        opencv.loadImage(kinect.rgbImage());
+        background = opencv.getSnapshot();
+      }
+      
+      opencv.useColor(HSB);
+      opencv.setGray(opencv.getS().clone());
+      opencv.threshold(45); //95
+      opencv.erode();
+      //opencv.invert();
+      
+    } else if (method == IMAGE_DIFF) {
+       
+      if (backgroundInitialized) {
+ 
+        pushMatrix();
+        scale(0.5);
+        image(background, 0, 0);
+        popMatrix();
     
-    } else if (source == KINECT && kinect != null) {
-      kinect.update();
-      opencv.loadImage(kinect.rgbImage());
-      background = opencv.getSnapshot();
+        if (stageInitialized) {
+      
+          // Diff
+          opencv.loadImage(background);
+          opencv.diff(stage);
+      
+          // Calculate Threshold
+          opencv.threshold(80);
+          
+          // Reduce noise
+          opencv.erode();
+          //opencv.invert();
+      
+          // Contours
+          contours = opencv.findContours(true,true);
+        
+          // Edges
+          /*opencv.loadImage(thresholdImage);
+          
+          // Dilate and erode to close holes
+          opencv.dilate();
+          opencv.erode();
+          opencv.findCannyEdges(20,75);*/
+        }
+      }
     }
-    
-    opencv.useColor(HSB);
-    opencv.setGray(opencv.getS().clone());
-    opencv.threshold(95);
-    opencv.erode();
-    //opencv.invert();
     
     contours = opencv.findContours(true, true);
     
@@ -111,6 +166,51 @@ class StageDetector {
   }
   
   ///////////////////////
+  // Image Difference
+  ///////////////////////
+  
+  // When a key is pressed, capture the background image into the backgroundPixels
+  // buffer, by copying each of the current frame's pixels into it.
+  public void initBackground() {
+    println("Background Initialized");
+    
+    if (source == CAPTURE && video.available()) {
+      video.read();
+      //opencv.useColor();
+      opencv.loadImage(video);
+      background = opencv.getSnapshot();
+    
+    } else if (source == KINECT && kinect != null) {
+      kinect.update();
+      opencv.loadImage(kinect.rgbImage());
+      background = opencv.getSnapshot();
+    }
+    
+    // Reset stage
+    stage = null;
+    
+    backgroundInitialized = true;
+  }
+  
+  public void initStage() {
+    println("Stage Initialized");
+    
+    if (source == CAPTURE && video.available()) {
+      video.read();
+      //opencv.useColor();
+      opencv.loadImage(video);
+      stage = opencv.getSnapshot();
+    
+    } else if (source == KINECT && kinect != null) {
+      kinect.update();
+      opencv.loadImage(kinect.rgbImage());
+      stage = opencv.getSnapshot();
+    }
+  
+    stageInitialized = true;
+  }
+  
+  ///////////////////////
   // Display Functions
   ///////////////////////
   
@@ -124,7 +224,9 @@ class StageDetector {
   }
   
   public void displayBackground() {
-    if (background != null) {
+    if (stage != null) {
+      image(stage, 0, 0);
+    } else if (background != null) {
       image(background, 0, 0);
     }
   }

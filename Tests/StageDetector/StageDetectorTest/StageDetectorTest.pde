@@ -9,7 +9,11 @@ ArrayList<Rectangle> stageElements;
 void setup() {
   
   //stage = new StageDetector(this, "after4.jpg");
-  stage = new StageDetector(this, 640, 480, CAPTURE);
+  stage = new StageDetector(this, 640, 480);
+  stage.setSource(CAPTURE);
+  //stage.setMethod(IMAGE_DIFF);
+  stage.setMethod(EDGES);
+  
   //stage = new StageDetector(this, 640, 480, KINECT);
  
   size(stage.width, stage.height);
@@ -21,18 +25,18 @@ void setup() {
 void draw() {
   stage.displayBackground();
   stage.displayContours();
-  
-  /*for (Rectangle r : stageElements) {  
-    stroke(255, 0, 0);
-    fill(255, 0, 0, 150);
-    strokeWeight(2);
-    rect(r.x, r.y, r.width, r.height);
-  }*/
 }
 
 void keyPressed() { 
-  if (key == ENTER) {
+  /*if (key == ENTER) {
     println(">>>>> DETECT!");
     stageElements = stage.detect();
+  }*/
+  
+  if (key == ENTER) {
+    stage.initBackground();
+  } else if (key == ' ') {
+    stage.initStage();
+    stage.detect();
   }
 }

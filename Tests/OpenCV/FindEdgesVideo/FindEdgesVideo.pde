@@ -1,4 +1,4 @@
-import gab.opencv.*;
+ import gab.opencv.*;
 import processing.video.*;
 import java.awt.Rectangle;
 
@@ -34,7 +34,7 @@ void draw() {
   opencv.setGray(opencv.getS().clone());
   
   // Filter the image based on threshold
-  opencv.threshold(95);
+  opencv.threshold(40);
   
   // Reduce noise
   opencv.erode();
