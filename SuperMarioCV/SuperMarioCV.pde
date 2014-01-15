@@ -89,6 +89,10 @@ void resetGame() {
   addScreen("level", new MarioLevel(width, height, stageElements));
 }
 
+void updateGameStage() {
+  // TO DO: Update MarioLevel object with new stageElements but not create new
+}
+
 void detectStage() {
   println(">>>>> DETECT!");
   stageElements = scaleRectanglesArray(stage.detect(), scaleFactor);
