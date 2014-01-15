@@ -1,16 +1,25 @@
+/**
+ * StageDetector Class
+ * Makes use of the OpenCV for Processing library by Greg Borenstein
+ * https://github.com/atduskgreg/opencv-processing
+ * 
+ * @Author: Jordi Tost
+ * @Author URI: jorditost.com
+ */
+ 
 import gab.opencv.*;
 import SimpleOpenNI.*;
 import java.awt.Rectangle;
 import processing.video.*;
 
 // Video Source
-static int STATIC     = 1;
-static int CAPTURE    = 2;
-static int KINECT     = 3;
+static int STATIC               = 1;
+static int CAPTURE              = 2;
+static int KINECT               = 3;
 
 // Detection method
-static int EDGES      = 1;
-static int IMAGE_DIFF = 2;
+static int EDGES                = 1;
+static int IMAGE_DIFF           = 2;
 
 class StageDetector {
   
@@ -23,13 +32,23 @@ class StageDetector {
   int source = CAPTURE;
   int method = EDGES;
   
+  // Public vars
+  public int width, height;
+  public Boolean backgroundInitialized = false;
+  public Boolean stageInitialized = false;
+  
+  // Private vars
   private PImage background, stage;
   private ArrayList<Contour> contours;
   private ArrayList<Rectangle> stageElements;
-  public int width, height;
   
-  Boolean backgroundInitialized = false;
-  Boolean stageInitialized = false;
+  private int edgesThreshold     = 95; // 40: Natural light
+  private int imageDiffThreshold = 80;
+  
+  
+  //////////////////
+  // Constructors
+  //////////////////
   
   StageDetector(PApplet theParent, int requestWidth, int requestHeight) {
     
@@ -64,6 +83,11 @@ class StageDetector {
     //opencv = new OpenCV(parent, width, height);
   }
   
+  
+  /////////////////
+  // Set Methods
+  /////////////////
+  
   void setSource(int theSource) {
     source = theSource;
   }
@@ -72,15 +96,36 @@ class StageDetector {
     method = theMethod;
   }
   
+  void setEdgesThreshold(int value) {
+    edgesThreshold = value;
+    if (method != EDGES) {
+      println("You're assigning a threshold for a wrong detection method!");
+    }
+  }
   
-  // Detect stage elements
+  void setImageDiffThreshold(int value) {
+    edgesThreshold = value;
+    if (method != IMAGE_DIFF) {
+      println("You're assigning a threshold for a wrong detection method!");
+    }  
+  }
+  
+  
+  ////////////////////
+  // Detect Methods
+  ////////////////////
+  
   // Returns an array with bounding boxes
   public ArrayList<Rectangle> detect() {
     
+    // Edge Detection
     if (method == EDGES) {
       
-      if (source == CAPTURE && video.available()) {
-        video.read();
+      if (source == CAPTURE && video != null) {
+        
+        if (video.available()) {
+          video.read();
+        }
         //opencv.useColor();
         opencv.loadImage(video);
         background = opencv.getSnapshot();
@@ -93,10 +138,11 @@ class StageDetector {
       
       opencv.useColor(HSB);
       opencv.setGray(opencv.getS().clone());
-      opencv.threshold(40); //95®
+      opencv.threshold(edgesThreshold);
       opencv.erode();
       //opencv.invert();
       
+    // Image Different (we need 2 images)
     } else if (method == IMAGE_DIFF) {
        
       if (backgroundInitialized) {
@@ -113,7 +159,7 @@ class StageDetector {
           opencv.diff(stage);
       
           // Calculate Threshold
-          opencv.threshold(80);
+          opencv.threshold(imageDiffThreshold);
           
           // Reduce noise
           opencv.erode();
@@ -165,17 +211,22 @@ class StageDetector {
     return clonedStageElements;
   }
   
-  ///////////////////////
-  // Image Difference
-  ///////////////////////
+  
+  ///////////////////////////////////////////////
+  // Recalculate Background & Stage key images
+  ///////////////////////////////////////////////
   
   // When a key is pressed, capture the background image into the backgroundPixels
   // buffer, by copying each of the current frame's pixels into it.
   public void initBackground() {
     println("Background Initialized");
     
-    if (source == CAPTURE && video.available()) {
-      video.read();
+    if (source == CAPTURE && video != null) {
+      
+      if (video.available()) {
+        video.read();
+      }
+      
       //opencv.useColor();
       opencv.loadImage(video);
       background = opencv.getSnapshot();
@@ -209,6 +260,7 @@ class StageDetector {
   
     stageInitialized = true;
   }
+  
   
   ///////////////////////
   // Display Functions
@@ -248,11 +300,11 @@ class StageDetector {
     }
     
     // Detected stage elements
-    /*for (Rectangle r : stageElements) {  
+    for (Rectangle r : stageElements) {  
       stroke(255, 0, 0);
       fill(255, 0, 0, 150);
       strokeWeight(2);
       rect(r.x, r.y, r.width, r.height);
-    }*/
+    }
   }
 }

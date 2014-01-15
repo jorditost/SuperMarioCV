@@ -6,6 +6,8 @@ Capture video;
 StageDetector stage;
 ArrayList<Rectangle> stageElements;
 
+Boolean realtimeUpdate = false;
+
 void setup() {
   
   //stage = new StageDetector(this, "after4.jpg");
@@ -23,7 +25,13 @@ void setup() {
 }
 
 void draw() {
-  stage.displayBackground();
+  
+  if (stage.method == EDGES && realtimeUpdate) {
+    stage.detect();
+  }
+  
+  stage.display();
+  //stage.displayBackground();
   stage.displayContours();
 }
 
@@ -35,8 +43,15 @@ void keyPressed() {
   
   if (key == ENTER) {
     stage.initBackground();
+    if (stage.method == EDGES) {
+      stage.detect();
+    }
+    
   } else if (key == ' ') {
-    stage.initStage();
-    stage.detect();
+    
+    if (stage.method == IMAGE_DIFF) {
+      stage.initStage();
+      stage.detect();
+    }
   }
 }

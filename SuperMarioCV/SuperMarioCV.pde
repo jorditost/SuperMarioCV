@@ -16,6 +16,9 @@ float DAMPENING = 0.75;
 StageDetector stage;
 ArrayList<Rectangle> stageElements;
 
+// Realtime vars
+Boolean realtimeDetect = false;
+
 ///////////
 // Setup
 ///////////
@@ -25,9 +28,9 @@ ArrayList<Rectangle> stageElements;
 
 void setup() {
 
-  //stage = new StageDetector(this, "after4.jpg");
+  stage = new StageDetector(this, "after4.jpg");
   //stage = new StageDetector(this, 640, 480, CAPTURE);
-  stage = new StageDetector(this, 640, 480);
+  //stage = new StageDetector(this, 640, 480);
   stage.setSource(CAPTURE);
   stage.setMethod(EDGES);
 
@@ -49,7 +52,11 @@ void setup() {
 
 // Draw loop
 void draw() {
-
+  
+  if (stage.method == EDGES && realtimeDetect)
+    detectStage();
+  }
+  
   pushMatrix();
   scale(scaleFactor);
   stage.displayBackground();
@@ -60,6 +67,7 @@ void draw() {
   activeScreen.draw(); 
   SoundManager.draw();
 }
+
 
 //////////////////////////
 // Jump & Run Functions
@@ -81,6 +89,10 @@ void resetGame() {
   addScreen("level", new MarioLevel(width, height, stageElements));
 }
 
+void detectStage() {
+  println(">>>>> DETECT!");
+  stageElements = scaleRectanglesArray(stage.detect(), scaleFactor);
+}
 
 ////////////////////
 // Event Handling
@@ -89,20 +101,32 @@ void resetGame() {
 void keyPressed() { 
   activeScreen.keyPressed(key, keyCode); 
   
+  // Update background image
   if (key == ENTER) {
+      
     stage.initBackground();
+    
+    // Detect for Edges Detection
+    if (stage.method == EDGES) {
+      detectStage();
+      resetGame();
+    }
+  
+  // Update stage elements (post-its, etc)
   } else if (key == ' ') {
-    println(">>>>> DETECT!");
-    stage.initStage();
-    stageElements = scaleRectanglesArray(stage.detect(), scaleFactor);
+    
+    // Detect for Image Diff Detection
+    if (stage.method == IMAGE_DIFF) {
+      stage.initStage();
+      detectStage();
+      resetGame();
+    }
+  
+  // Reset Game
+  } else if (key == BACKSPACE) {
+    detectStage();
     resetGame();
   }
-  
-  /*if (key == ENTER) {
-    println(">>>>> DETECT!");
-    stageElements = scaleRectanglesArray(stage.detect(), scaleFactor);
-    resetGame();
-  }*/
 }
 
 void keyReleased() { 
