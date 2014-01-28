@@ -1,10 +1,12 @@
 /**
  * StageDetector Class
- * Makes use of the OpenCV for Processing library by Greg Borenstein
+ * Uses the OpenCV for Processing library by Greg Borenstein
  * https://github.com/atduskgreg/opencv-processing
  * 
  * @Author: Jordi Tost
  * @Author URI: jorditost.com
+ *
+ * University of Applied Sciences Potsdam, 2013-2014
  */
  
 import gab.opencv.*;
@@ -13,7 +15,7 @@ import java.awt.Rectangle;
 import processing.video.*;
 
 // Video Source
-static int STATIC               = 1;
+static int IMAGE_SRC            = 1;
 static int CAPTURE              = 2;
 static int KINECT               = 3;
 
@@ -50,7 +52,7 @@ class StageDetector {
   // Constructors
   //////////////////
   
-  StageDetector(PApplet theParent, int requestWidth, int requestHeight) {
+  StageDetector(PApplet theParent, int requestWidth, int requestHeight, int theSource) {
     
     parent = theParent;
     
@@ -58,6 +60,8 @@ class StageDetector {
     height = requestHeight;
     
     opencv = new OpenCV(parent, width, height);
+    
+    source = theSource;
     
     if (source == CAPTURE) {
       video = new Capture(parent, width, height);
@@ -72,7 +76,7 @@ class StageDetector {
     
     parent = theParent;
     
-    source = STATIC;
+    source = IMAGE_SRC;
     
     background = loadImage(imageSrc);
    
@@ -90,6 +94,16 @@ class StageDetector {
   
   void setSource(int theSource) {
     source = theSource;
+    
+    opencv = new OpenCV(parent, width, height);
+    
+    if (source == CAPTURE) {
+      video = new Capture(parent, width, height);
+      video.start();
+    } else if (source == KINECT) {
+      kinect = new SimpleOpenNI(parent);
+      kinect.enableRGB();
+    }
   }
   
   void setMethod(int theMethod) {
@@ -267,12 +281,23 @@ class StageDetector {
   ///////////////////////
   
   public void display() {
-   
-    if (video.available()) {
-      video.read(); 
-    }
     
-    image(video, 0, 0);
+    if (source == CAPTURE) {
+      
+      println("display CAPTURE");
+      if (video.available()) {
+        video.read(); 
+      }
+      image(video, 0, 0);
+      
+    } else if (source == KINECT) {
+      
+      println("display KINECT");
+      kinect.update();
+      image(kinect.rgbImage(), 0, 0);
+    } else if (source == IMAGE_SRC) {
+      image(background, 0, 0);
+    }
   }
   
   public void displayBackground() {

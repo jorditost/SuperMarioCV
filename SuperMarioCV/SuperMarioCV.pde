@@ -1,7 +1,27 @@
+/**
+ * SuperMarioCV
+ *
+ * University of Applied Sciences Potsdam, 2013-2014
+ */
+
+/*
+   TO DOs
+   =======
+   
+   StageDetector:
+   - Unify display() and displayBackground() functions for all detection methods and sources
+   
+   P52DGameEngine:
+   - clearDynamicBoundaries(): Do we need it?
+   - Realtime: Update Mario position but not deleting it (now it needs jumping)
+ */
+ 
+import processing.opengl.*;
 import gab.opencv.*;
 import java.awt.Rectangle;
 
 boolean test = true;
+boolean showOnProjector = false;
 
 int screenWidth = 512;
 int screenHeight = 432;
@@ -12,12 +32,16 @@ float DOWN_FORCE = 2;
 float ACCELERATION = 1.3;
 float DAMPENING = 0.75;
 
+// Level vars
+MarioLevel marioLevel;
+
 // Background Detection vars
 StageDetector stage;
 ArrayList<Rectangle> stageElements;
 
 // Realtime vars
-Boolean realtimeDetect = false;
+int t, detectionRate = 2000;
+Boolean realtimeDetect = true;
 
 ///////////
 // Setup
@@ -28,17 +52,26 @@ Boolean realtimeDetect = false;
 
 void setup() {
 
-  stage = new StageDetector(this, "after4.jpg");
-  //stage = new StageDetector(this, 640, 480, CAPTURE);
-  //stage = new StageDetector(this, 640, 480);
-  stage.setSource(CAPTURE);
+  //stage = new StageDetector(this, "after4.jpg");
+  stage = new StageDetector(this, 640, 480, CAPTURE);
+  //stage.setSource(CAPTURE);
   stage.setMethod(EDGES);
+  stage.setEdgesThreshold(65);
 
   screenWidth = int(scaleFactor*stage.width);
   screenHeight = int(scaleFactor*stage.height);
 
-  size(screenWidth, screenHeight);
+  size(screenWidth, screenHeight, OPENGL);
+  
+  // set location - needs to be in setup()
+  // set x parameter depending on the resolution of your 1st screen
+  /*if (showOnProjector) {
+    frame.setLocation(1440,0);
+  }*/
+  
   noLoop();
+  
+  t = millis();
 
   // Setup Game Engine
   setupGameEngine();
@@ -53,13 +86,16 @@ void setup() {
 // Draw loop
 void draw() {
   
-  if (stage.method == EDGES && realtimeDetect)
+  // Realtime detection for
+  if (stage.method == EDGES && realtimeDetect && (millis() - t >= detectionRate)) {
     detectStage();
+    updateGameStage();
+    t = millis();
   }
   
   pushMatrix();
   scale(scaleFactor);
-  stage.displayBackground();
+  stage.display();
   if (test) stage.displayContours();
   popMatrix();
   
@@ -67,6 +103,14 @@ void draw() {
   activeScreen.draw(); 
   SoundManager.draw();
 }
+
+/*void init(){
+ if (showOnProjector) {
+   frame.dispose();  
+   frame.setUndecorated(true);
+   super.init();
+ }
+}*/
 
 
 //////////////////////////
@@ -81,20 +125,20 @@ void setupGameEngine() {
 }
 
 void initializeGame() {
-  addScreen("level", new MarioLevel(width, height, stageElements));
+  marioLevel = new MarioLevel(width, height, stageElements);
+  addScreen("level", marioLevel);
 }
 
 void resetGame() {
   clearScreens();
-  addScreen("level", new MarioLevel(width, height, stageElements));
+  initializeGame();
 }
 
 void updateGameStage() {
-  // TO DO: Update MarioLevel object with new stageElements but not create new
+  marioLevel.updatePlatforms(stageElements);
 }
 
 void detectStage() {
-  println(">>>>> DETECT!");
   stageElements = scaleRectanglesArray(stage.detect(), scaleFactor);
 }
 
@@ -159,36 +203,77 @@ void mouseClicked() {
 ///////////
 
 class MarioLevel extends Level {
-
+  
+  MarioLayer marioLayer;
+  
   // Constructor passing platforms array (stage elements)
   MarioLevel(float levelWidth, float levelHeight, ArrayList<Rectangle> platformsArray) {
     super(levelWidth, levelHeight);
-    addLevelLayer("layer", new MarioLayer(this, platformsArray));
+    marioLayer = new MarioLayer(this, platformsArray);
+    addLevelLayer("layer", marioLayer);
+  }
+  
+  public void updatePlatforms(ArrayList<Rectangle> platformsArray) {
+     marioLayer.updatePlatforms(platformsArray);
   }
 }
 
 class MarioLayer extends LevelLayer {
-
+  
+  Mario mario;
+  float marioStartX = width/12;
+  float marioStartY = height/2;
+  
   MarioLayer(Level owner, ArrayList<Rectangle> platformsArray) {
     super(owner);
+    
+    // Add static platforms (walls, ground, etc.)
+    addStaticPlatforms();
 
-    // Ground and walls
-    addBoundary(new Boundary(0, height-2, 138, height-48));
-    addBoundary(new Boundary(138, height-48, width, height-48));
-    //addBoundary(new Boundary(0,height-48,width,height-48));
-    addBoundary(new Boundary(-1, 0, -1, height));
-    addBoundary(new Boundary(width+1, height, width+1, 0));
-
-    // Add some ground platforms, some with coins
-    addGroundPlatform("ground", 40+width/2, height-144, 40, 90);
-    addGroundPlatform("ground", width/2, height-96, 68, 48);
-
-    // Add floating platforms (post-its)
-    addLevelPlatforms(platformsArray);
+    // Add dynamic platforms (post-its)
+    addDynamicPlatforms(platformsArray);
 
     if (test) showBoundaries = true;
-    Mario mario = new Mario(width/2, height/2);
+    mario = new Mario(marioStartX, marioStartY);
     addPlayer(mario);
+  }
+  
+  // for convenience we change the draw function
+  // so that if Mario falls outside the screen,
+  // we put him back at his start position:
+  void draw() {
+    super.draw();
+    
+    if (mario.y > height && !mario.isDying) {
+      mario.die();
+    }
+      
+    /*if (!mario.isDying) {
+      if (mario.y > height) {
+        mario.die();
+      }
+    } else {
+      if (mario.y > height + 100) {
+        mario.resurrect();
+      }
+    }*/
+  }
+
+  public void updatePlatforms(ArrayList<Rectangle> platformsArray) {
+    
+    // Clear old boundaries
+    //clearDynamicPlatforms();
+    
+    // Clear everything except player
+    clearExceptPlayer();
+    
+    mario.updatePosition();
+    
+    // Add static platforms (walls, ground, etc.)
+    addStaticPlatforms();
+    
+    // Add floating platforms (post-its)
+    addDynamicPlatforms(platformsArray);
   }
 
   // Add some ground.
@@ -197,7 +282,7 @@ class MarioLayer extends LevelLayer {
     addBackgroundSprite(groundline);
     TilingSprite groundfiller = new TilingSprite(new Sprite("graphics/backgrounds/"+tileset+"-filler.gif"), x1, y1+16, x2, y2);
     addBackgroundSprite(groundfiller);
-    addBoundary(new Boundary(x1, y1, x2, y1));
+    addBoundary(new Boundary(x1, y1, x2, y1, STATIC));
   }  
 
   // This creates the raised, angled sticking-out-ground bit.
@@ -207,7 +292,7 @@ class MarioLayer extends LevelLayer {
     groundslant.align(LEFT, BOTTOM);
     groundslant.setPosition(x, y);
     addBackgroundSprite(groundslant);
-    addBoundary(new Boundary(x, y + 48 - groundslant.height, x + 48, y - groundslant.height));
+    addBoundary(new Boundary(x, y + 48 - groundslant.height, x + 48, y - groundslant.height, STATIC));
   }
 
   // Add a platform with solid ground underneath.
@@ -236,22 +321,46 @@ class MarioLayer extends LevelLayer {
     addBackgroundSprite(sideright);
 
     // boundary to walk on
-    addBoundary(new Boundary(x, y, x+w, y));
+    addBoundary(new Boundary(x, y, x+w, y, STATIC));
   }
+  
+  // Add static platforms (ground, walls
+  void addStaticPlatforms() {
+    // Ground and walls
+    //addBoundary(new Boundary(0, height, width, height, STATIC));
+    addBoundary(new Boundary(-1, 0, -1, height, STATIC));
+    addBoundary(new Boundary(width+1, height, width+1, 0, STATIC));
 
-  // Add a floating platform
-  void addFloatingPlatform(float x, float y, float w, float h) {
-    addBoundary(new Boundary(x, y, x+w, y));
-    addBoundary(new Boundary(x+w, y, x+w, y+h));
-    addBoundary(new Boundary(x+w, y+h, x, y+h));
-    addBoundary(new Boundary(x, y+h, x, y));
+    // Add some ground platforms, some with coins
+    //addGroundPlatform("ground", 40+width/2, height-144, 40, 90);
+    //addGroundPlatform("ground", width/2, height-96, 68, 48);
+    
+    //addGroundPlatform("ground", 0, height-40, width/4, 40);
+    //addGroundPlatform("ground", width-(width/4), height-40, width/4, 40);
+    
+    // the ground now has an unjumpable gap:
+    addGround("ground", 0, height-48, width/4, height);
+    addGround("ground", width-(width/4), height-48, width, height);
   }
 
   // Add all level platforms given a rectangles array
-  void addLevelPlatforms(ArrayList<Rectangle> platformsArray) {
+  void addDynamicPlatforms(ArrayList<Rectangle> platformsArray) {
     for (Rectangle r : platformsArray) {
-      addFloatingPlatform(r.x, r.y, r.width, r.height);
+      addDynamicPlatform(r.x, r.y, r.width, r.height);
     }
+  }
+  
+  // Clear dynamic platforms
+  void clearDynamicPlatforms() {
+    clearDynamicBoundaries();
+  }
+  
+  // Add a floating platform
+  void addDynamicPlatform(float x, float y, float w, float h) {
+    addBoundary(new Boundary(x, y, x+w, y, DYNAMIC));
+    addBoundary(new Boundary(x+w, y, x+w, y+h, DYNAMIC));
+    addBoundary(new Boundary(x+w, y+h, x, y+h, DYNAMIC));
+    addBoundary(new Boundary(x, y+h, x, y, DYNAMIC));
   }
 }
 
@@ -264,6 +373,7 @@ class Mario extends Player {
   int score = 0;
   float speed = 2;
   float initX, initY;
+  boolean isDying;
 
   Mario(float x, float y) {
     super("Mario");
@@ -277,6 +387,7 @@ class Mario extends Player {
     setForces(0, DOWN_FORCE);
     setAcceleration(0, ACCELERATION);
     setImpulseCoefficients(DAMPENING, DAMPENING);
+    isDying = false;
   }
 
   void setupStates() {
@@ -285,7 +396,7 @@ class Mario extends Player {
 
     State dead = new State("dead", "graphics/mario/small/Dead-mario.gif", 1, 2);
     dead.setAnimationSpeed(0.25);
-    dead.setDuration(100);
+    dead.setDuration(15);
     addState(dead);   
 
     State jumping = new State("jumping", "graphics/mario/small/Jumping-mario.gif");
@@ -294,7 +405,33 @@ class Mario extends Player {
 
     setCurrentState("idle");
   }
-
+  
+  void die() {
+    // switch to dead state
+    setCurrentState("dead");
+    // turn off interaction, so we don't flag more touching koopas or pickups or walls, etc.
+    setInteracting(false);
+    // make up jump up in an "oh no!" fashion
+    addImpulse(0,-40);
+    // and turn up gravity so we fall down quicker than usual.
+    setForces(0,3);
+    
+    isDying = true;
+  }
+  
+  void resurrect() {
+    println("RESURRECT!!!");
+    setPosition(initX, initY);
+    setCurrentState("idle");
+    isDying = false;
+  }
+  
+  void updatePosition() {
+    //addImpulse(0, -2);
+    //jsupdate();
+    //verifyInMotion();
+  }
+  
   /*public void restart() {
    removeActor();
    //reset();
@@ -303,9 +440,13 @@ class Mario extends Player {
    }*/
 
   void handleStateFinished(State which) {
+    
+    println(">>>>>>>>>>>> finish state: " + which.name);
     if (which.name == "dead") {
       removeActor();
       resetGame();
+      //println("DEAD FINISHED!");
+      //resurrect();
     } 
     else {
       setCurrentState("idle");

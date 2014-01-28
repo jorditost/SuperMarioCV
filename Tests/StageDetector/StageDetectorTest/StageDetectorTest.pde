@@ -6,17 +6,15 @@ Capture video;
 StageDetector stage;
 ArrayList<Rectangle> stageElements;
 
-Boolean realtimeUpdate = false;
+Boolean realtimeUpdate = true;
 
 void setup() {
   
   //stage = new StageDetector(this, "after4.jpg");
-  stage = new StageDetector(this, 640, 480);
-  stage.setSource(CAPTURE);
+  stage = new StageDetector(this, 640, 480, KINECT);
+  stage.setSource(KINECT);
   //stage.setMethod(IMAGE_DIFF);
   stage.setMethod(EDGES);
-  
-  //stage = new StageDetector(this, 640, 480, KINECT);
  
   size(stage.width, stage.height);
   frameRate(30);

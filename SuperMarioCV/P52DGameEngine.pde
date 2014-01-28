@@ -3,6 +3,9 @@
  * https://github.com/Pomax/Pjs-2D-Game-Engine
  */
  
+static int STATIC  = 1;
+static int DYNAMIC = 1;
+ 
 /**
  * Actors represent something or someone,
  * and can consist of one or more states,
@@ -510,6 +513,8 @@ class Boundary extends Positionable {
   float angle, cosa, sina, cosma, sinma;
   // <1 means friction, =1 means frictionless, >1 means speed boost!
   float glide;
+  
+  int type = STATIC;
 
   // boundaries can be linked
   Boundary prev, next;
@@ -523,7 +528,7 @@ class Boundary extends Positionable {
    * vast number of shortcut values so we
    * don't need to recompute them constantly.
    */
-  Boundary(float x1, float y1, float x2, float y2) {
+  Boundary(float x1, float y1, float x2, float y2, int theType) {
     // coordinates
     x = x1;
     y = y1;
@@ -537,6 +542,8 @@ class Boundary extends Positionable {
     updateAngle();
     glide = 1.0;
     listeners = new ArrayList<BoundaryCollisionListener>();
+    
+    type = theType;
   }
   
   /**
@@ -1727,6 +1734,17 @@ abstract class LevelLayer {
   void addBoundary(Boundary boundary)    { boundaries.add(boundary);    }
   void removeBoundary(Boundary boundary) { boundaries.remove(boundary); }
   void clearBoundaries() { boundaries.clear(); }
+  
+  // TODO: Fix remove boundaries!
+  void clearDynamicBoundaries() {
+    
+    /*for (Boundary b: boundaries) {
+      //b.draw(x,y,w,h);
+      if (b.type == DYNAMIC) {
+        boundaries.remove(b);
+      }
+    }*/
+  }
 
   // The list of static, non-interacting sprites, building up the background
   void addBackgroundSprite(Drawable fixed)    { fixed_background.add(fixed);    }
