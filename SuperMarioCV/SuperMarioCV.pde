@@ -29,10 +29,10 @@ boolean showOnProjector = false;
 
 //int screenWidth = 512;
 //int screenHeight = 432;
-//float scaleFactor = 0.65;
+//float scaleFactor = 0.5;
 
-int screenWidth = 800; //512;
-int screenHeight = 600; //432;
+int screenWidth = 800;
+int screenHeight = 600;
 float scaleFactor = 1.25;
 
 // Jump & Run vars
@@ -105,11 +105,21 @@ void draw() {
   scale(scaleFactor);
   
   if (showOnProjector) {
-    noStroke();
-    fill(0);
-    rect(0,0,width,height);
+    
+    if (realtimeDetect) {
+      noStroke();
+      fill(0);
+      rect(0,0,width,height);
+    } else {
+      stage.displayBackground();  
+    }
+    
   } else {
-    stage.display();
+    if (realtimeDetect) {
+      stage.display();
+    } else {
+      stage.displayBackground();  
+    }
     //if (test) stage.displayContours();  
   }
   
@@ -428,18 +438,20 @@ class Mario extends Player {
     // turn off interaction, so we don't flag more touching koopas or pickups or walls, etc.
     setInteracting(false);
     // make up jump up in an "oh no!" fashion
-    addImpulse(0,-40);
+    addImpulse(0,-70);
     // and turn up gravity so we fall down quicker than usual.
-    setForces(0,3);
+    //setForces(0,3);
     
     isDying = true;
   }
   
   void resurrect() {
     println("RESURRECT!!!");
-    setPosition(initX, initY);
-    setCurrentState("idle");
-    isDying = false;
+    removeActor();
+    resetGame();
+    //setPosition(initX, initY);
+    //setCurrentState("idle");
+    //isDying = false;
   }
   
   void updatePosition() {
@@ -458,10 +470,10 @@ class Mario extends Player {
   void handleStateFinished(State which) {
     
     if (which.name == "dead") {
-      removeActor();
-      resetGame();
       //println("DEAD FINISHED!");
-      //resurrect();
+      resurrect();
+      //removeActor();
+      //resetGame();
     } 
     else {
       setCurrentState("idle");
@@ -470,6 +482,8 @@ class Mario extends Player {
 
   // Keyboard interaction
   void handleInput() {
+    
+    if (isDying) return;
 
     // handle running
     if (isKeyDown(char(LEFT)) || isKeyDown(char(RIGHT))) {
