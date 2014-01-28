@@ -15,7 +15,8 @@ void setup() {
   stage.setSource(KINECT);
   //stage.setMethod(IMAGE_DIFF);
   stage.setMethod(EDGES);
- 
+  stage.setEdgesThreshold(70);
+  
   size(stage.width, stage.height);
   frameRate(30);
   

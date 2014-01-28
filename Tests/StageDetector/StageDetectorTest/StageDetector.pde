@@ -215,7 +215,7 @@ class StageDetector {
       Rectangle r = contour.getBoundingBox();
       
       if (//(contour.area() > 0.9 * src.width * src.height) ||
-          (r.width < 30 || r.height < 30))
+          (r.width < 20 || r.height < 20))
         continue;
       
       stageElements.add(r);
@@ -283,18 +283,18 @@ class StageDetector {
   public void display() {
     
     if (source == CAPTURE) {
-      
-      println("display CAPTURE");
+     
       if (video.available()) {
         video.read(); 
       }
+      
       image(video, 0, 0);
       
     } else if (source == KINECT) {
       
-      println("display KINECT");
       kinect.update();
       image(kinect.rgbImage(), 0, 0);
+      
     } else if (source == IMAGE_SRC) {
       image(background, 0, 0);
     }
@@ -317,12 +317,12 @@ class StageDetector {
     strokeWeight(3);
     
     // Contours
-    for (Contour contour : contours) {
+    /*for (Contour contour : contours) {
       noFill();
       stroke(0, 255, 0);
       strokeWeight(3);
       contour.draw();
-    }
+    }*/
     
     // Detected stage elements
     for (Rectangle r : stageElements) {  

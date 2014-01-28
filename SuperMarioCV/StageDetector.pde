@@ -207,10 +207,10 @@ class StageDetector {
     stageElements = new ArrayList<Rectangle>();
     
     for (Contour contour : contoursArray) {
-      noFill();
+      /*noFill();
       stroke(0, 255, 0);
       strokeWeight(3);
-      contour.draw();
+      contour.draw();*/
       
       Rectangle r = contour.getBoundingBox();
       

@@ -23,9 +23,17 @@ import java.awt.Rectangle;
 boolean test = true;
 boolean showOnProjector = false;
 
-int screenWidth = 512;
-int screenHeight = 432;
-float scaleFactor = 0.5;
+//int screenWidth = 640;
+//int screenHeight = 480;
+//float scaleFactor = 1;
+
+//int screenWidth = 512;
+//int screenHeight = 432;
+//float scaleFactor = 0.65;
+
+int screenWidth = 800; //512;
+int screenHeight = 600; //432;
+float scaleFactor = 1.25;
 
 // Jump & Run vars
 float DOWN_FORCE = 2;
@@ -53,10 +61,10 @@ Boolean realtimeDetect = true;
 void setup() {
 
   //stage = new StageDetector(this, "after4.jpg");
-  stage = new StageDetector(this, 640, 480, CAPTURE);
+  stage = new StageDetector(this, 640, 480, KINECT);
   //stage.setSource(CAPTURE);
   stage.setMethod(EDGES);
-  stage.setEdgesThreshold(65);
+  stage.setEdgesThreshold(70);
 
   screenWidth = int(scaleFactor*stage.width);
   screenHeight = int(scaleFactor*stage.height);
@@ -95,8 +103,16 @@ void draw() {
   
   pushMatrix();
   scale(scaleFactor);
-  stage.display();
-  if (test) stage.displayContours();
+  
+  if (showOnProjector) {
+    noStroke();
+    fill(0);
+    rect(0,0,width,height);
+  } else {
+    stage.display();
+    //if (test) stage.displayContours();  
+  }
+  
   popMatrix();
   
   // to do
@@ -441,7 +457,6 @@ class Mario extends Player {
 
   void handleStateFinished(State which) {
     
-    println(">>>>>>>>>>>> finish state: " + which.name);
     if (which.name == "dead") {
       removeActor();
       resetGame();
