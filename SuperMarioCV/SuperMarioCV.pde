@@ -20,8 +20,9 @@ import processing.opengl.*;
 import gab.opencv.*;
 import java.awt.Rectangle;
 
-boolean test = true;
-boolean showOnProjector = false;
+boolean test = false;
+boolean showOnProjector = true;
+Boolean realtimeDetect = false;
 
 //int screenWidth = 640;
 //int screenHeight = 480;
@@ -33,7 +34,7 @@ boolean showOnProjector = false;
 
 int screenWidth = 800;
 int screenHeight = 600;
-float scaleFactor = 1.25;
+float scaleFactor = 1;
 
 // Jump & Run vars
 float DOWN_FORCE = 2;
@@ -49,7 +50,6 @@ ArrayList<Rectangle> stageElements;
 
 // Realtime vars
 int t, detectionRate = 2000;
-Boolean realtimeDetect = true;
 
 ///////////
 // Setup
@@ -73,9 +73,9 @@ void setup() {
   
   // set location - needs to be in setup()
   // set x parameter depending on the resolution of your 1st screen
-  /*if (showOnProjector) {
+  if (showOnProjector) {
     frame.setLocation(1440,0);
-  }*/
+  }
   
   noLoop();
   
@@ -106,13 +106,17 @@ void draw() {
   
   if (showOnProjector) {
     
-    if (realtimeDetect) {
+    noStroke();
+    fill(0);
+    rect(0,0,width,height);
+    
+    /*if (realtimeDetect) {
       noStroke();
       fill(0);
       rect(0,0,width,height);
     } else {
       stage.displayBackground();  
-    }
+    }*/
     
   } else {
     if (realtimeDetect) {
@@ -130,13 +134,13 @@ void draw() {
   SoundManager.draw();
 }
 
-/*void init(){
+void init(){
  if (showOnProjector) {
    frame.dispose();  
    frame.setUndecorated(true);
    super.init();
  }
-}*/
+}
 
 
 //////////////////////////
@@ -247,7 +251,7 @@ class MarioLevel extends Level {
 class MarioLayer extends LevelLayer {
   
   Mario mario;
-  float marioStartX = width/12;
+  float marioStartX = width/12 + 30;
   float marioStartY = height/2;
   
   MarioLayer(Level owner, ArrayList<Rectangle> platformsArray) {
@@ -258,6 +262,24 @@ class MarioLayer extends LevelLayer {
 
     // Add dynamic platforms (post-its)
     addDynamicPlatforms(platformsArray);
+    
+    // Add Coins
+    addCoins(width-160,height-70,68);
+    addCoins(364,105,68);
+    addCoins(247,200,12);
+    addCoins(247,180,12);
+    addCoins(247,160,12);
+    addCoins(247,140,12);
+    
+    // Add Enemies
+    Koopa koopa = new Koopa(width/4, height-178);
+    addInteractor(koopa);
+    
+    Koopa koopa2 = new Koopa(280, 100);
+    addInteractor(koopa2);
+    
+    //Koopa koopa3 = new Koopa(width - (width/12), height-178);
+    //addInteractor(koopa3);
 
     if (test) showBoundaries = true;
     mario = new Mario(marioStartX, marioStartY);
@@ -388,6 +410,14 @@ class MarioLayer extends LevelLayer {
     addBoundary(new Boundary(x+w, y+h, x, y+h, DYNAMIC));
     addBoundary(new Boundary(x, y+h, x, y, DYNAMIC));
   }
+  
+  // add coins over a horizontal stretch  
+  void addCoins(float x, float y, float w) {
+    float step = 16, i = 0, last = w/step;
+    for(i=0; i<last; i++) {
+      addForPlayerOnly(new Coin(x+8+i*step,y));
+    }
+  }
 }
 
 //////////////////
@@ -432,6 +462,34 @@ class Mario extends Player {
     setCurrentState("idle");
   }
   
+  // what happens when we touch another player or NPC?
+  void overlapOccurredWith(Actor other, float[] direction) {
+    
+    if (other instanceof Koopa) {
+      // get a reference to this Koopa trooper
+      Koopa koopa = (Koopa) other;
+      
+      // get the angle at which we've impacted with this koopa trooper
+      float angle = direction[2];
+ 
+      // Now to find out whether we bopped a koopa on the head!
+      float tolerance = radians(75);
+      if (PI/2 - tolerance <= angle && angle <= PI/2 + tolerance) {
+        // we hit it from above!
+        // 1) squish the koopa trooper
+        koopa.squish();
+        // Stop moving in whichever direction we were moving in
+        stop(0,0);
+        // instead, jump up!
+        setImpulse(0, -30);
+        setCurrentState("jumping");
+      }
+ 
+      // if we didn't hit it at the correct angle, we still die =(
+      else { die(); }
+    }
+  }
+
   void die() {
     // switch to dead state
     setCurrentState("dead");
@@ -554,6 +612,52 @@ class Coin extends MarioPickup {
   }
 }
 
+class Koopa extends Interactor {
+  // we construct a Koopa trooper pretty much the same way we did Mario:
+  Koopa(float x, float y) {
+    super("Koopa Trooper");
+    setStates();
+    setForces(-0.05, DOWN_FORCE);
+    //setForces(-0.25, DOWN_FORCE);    
+    setImpulseCoefficients(DAMPENING, DAMPENING);
+    setPosition(x,y);
+  }
+  
+  // And we use states.
+  void setStates() {
+    // walking state
+    State walking = new State("idle", "graphics/enemies/Red-koopa-walking.gif", 1, 2);
+    walking.setAnimationSpeed(0.12);
+    addState(walking);
+    
+    // if we get squished, we first lose our shell.
+    State noshell = new State("noshell", "graphics/enemies/Naked-koopa-walking.gif", 1, 2);
+    noshell.setAnimationSpeed(0.12);
+    addState(noshell);
+    
+    setCurrentState("idle");
+  }
+  
+  void gotBlocked(Boundary b, float[] intersection) {
+    
+    // is the boundary vertical?
+    if (b.x == b.xw) {
+      // yes it is. Reverse direction!
+      fx = -fx;
+      setHorizontalFlip(fx > 0);
+    }
+  }
+  
+  void squish() {
+    // do we have our shell? Then we only get half-squished.
+    if (active.name != "noshell") {
+      setCurrentState("noshell");
+      return;
+    }
+    // no shell... this koopa is toast.
+    removeActor();
+  }
+}
 
 /**
  * A dragon coin!
