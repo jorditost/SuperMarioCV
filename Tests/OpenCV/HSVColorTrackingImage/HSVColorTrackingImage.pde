@@ -1,8 +1,8 @@
- import gab.opencv.*;
+import gab.opencv.*;
 import processing.video.*;
 import java.awt.Rectangle;
 
-Capture video;
+PImage img;
 OpenCV opencv;
 ArrayList<Contour> contours;
 
@@ -11,19 +11,20 @@ int rangeLow = 150;
 int rangeHigh = 160;
 
 void setup() {
-  video = new Capture(this, 640, 480);
-  opencv = new OpenCV(this, video.width, video.height);
+  img = loadImage("after4.jpg");
+  opencv = new OpenCV(this, img);
   size(opencv.width, opencv.height, P2D);
+  opencv.useColor(HSB);
   contours = new ArrayList<Contour>();
-  
-  video.start();
 }
 
 void draw() {
-  image(video, 0, 0);
+  opencv.loadImage(img);
+  
+  image(img, 0, 0);
 
   // <2> Load the new frame of our movie in to OpenCV
-  opencv.loadImage(video);
+  //opencv.loadImage(video);
   
   // <3> Tell OpenCV to work in HSV color space.
   opencv.useColor(HSB);
@@ -66,10 +67,6 @@ void draw() {
     fill(255, 0, 0);
     ellipse(r.x + r.width/2, r.y + r.height/2, 30, 30);
   }
-}
-
-void captureEvent(Capture c) {
-  c.read();
 }
 
 void mousePressed() {

@@ -4,7 +4,7 @@ import processing.video.*;
 
 Capture video;
 StageDetector stage;
-ArrayList<Rectangle> stageElements;
+ArrayList<StageElement> stageElements;
 
 Boolean realtimeUpdate = true;
 
@@ -12,10 +12,11 @@ void setup() {
   
   //stage = new StageDetector(this, "after4.jpg");
   stage = new StageDetector(this, 640, 480, KINECT);
-  stage.setSource(KINECT);
+  //stage.setSource(KINECT);
+  stage.setMethod(COLOR_FILTER);
   //stage.setMethod(IMAGE_DIFF);
-  stage.setMethod(EDGES);
-  stage.setEdgesThreshold(70);
+  //stage.setMethod(EDGES);
+  //stage.setEdgesThreshold(70);
   
   size(stage.width, stage.height);
   frameRate(30);
@@ -25,13 +26,13 @@ void setup() {
 
 void draw() {
   
-  if (stage.method == EDGES && realtimeUpdate) {
+  if ((stage.method == EDGES || stage.method == COLOR_FILTER) && realtimeUpdate) {
     stage.detect();
   }
   
   stage.display();
   //stage.displayBackground();
-  stage.displayContours();
+  stage.displayStageElements();
 }
 
 void keyPressed() { 

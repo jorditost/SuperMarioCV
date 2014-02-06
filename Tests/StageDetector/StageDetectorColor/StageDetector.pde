@@ -22,6 +22,12 @@ static int KINECT               = 3;
 // Detection method
 static int EDGES                = 1;
 static int IMAGE_DIFF           = 2;
+static int COLOR_FILTER         = 3;
+
+int redH = 6; //163;
+int greenH = 42; //37;
+int blueH = 110; //114;
+int rangeWidth = 5;
 
 class StageDetector {
   
@@ -42,7 +48,7 @@ class StageDetector {
   // Private vars
   private PImage background, stage;
   private ArrayList<Contour> contours;
-  private ArrayList<Rectangle> stageElements;
+  private ArrayList<StageElement> stageElements;
   
   private int edgesThreshold     = 95; // 40: Natural light
   private int imageDiffThreshold = 80;
@@ -70,6 +76,11 @@ class StageDetector {
       kinect = new SimpleOpenNI(parent);
       kinect.enableRGB();
     }
+    
+    opencv.useColor(HSB);
+    
+    contours = new ArrayList<Contour>();
+    stageElements = new ArrayList<StageElement>();
   }
   
   StageDetector(PApplet theParent, String imageSrc) {
@@ -84,7 +95,10 @@ class StageDetector {
     height = background.height;
     
     opencv = new OpenCV(parent, background);
-    //opencv = new OpenCV(parent, width, height);
+    opencv.useColor(HSB);
+    
+    contours = new ArrayList<Contour>();
+    stageElements = new ArrayList<StageElement>();
   }
   
   
@@ -130,25 +144,15 @@ class StageDetector {
   ////////////////////
   
   // Returns an array with bounding boxes
-  public ArrayList<Rectangle> detect() {
+  public ArrayList<StageElement> detect() {
+    
+    contours.clear();
+    stageElements.clear();
     
     // Edge Detection
     if (method == EDGES) {
       
-      if (source == CAPTURE && video != null) {
-        
-        if (video.available()) {
-          video.read();
-        }
-        //opencv.useColor();
-        opencv.loadImage(video);
-        background = opencv.getSnapshot();
-      
-      } else if (source == KINECT && kinect != null) {
-        kinect.update();
-        opencv.loadImage(kinect.rgbImage());
-        background = opencv.getSnapshot();
-      }
+      updateVideoSource();
       
       opencv.useColor(HSB);
       opencv.setGray(opencv.getS().clone());
@@ -156,7 +160,12 @@ class StageDetector {
       opencv.erode();
       //opencv.invert();
       
-    // Image Different (we need 2 images)
+      contours = opencv.findContours(true, true);
+    
+      // Get stage elements from contours
+      stageElements.addAll(getStageElements(contours, NONE));
+      
+    // Image Difference (we need 2 images)
     } else if (method == IMAGE_DIFF) {
        
       if (backgroundInitialized) {
@@ -180,37 +189,69 @@ class StageDetector {
           //opencv.invert();
       
           // Contours
-          contours = opencv.findContours(true,true);
-        
-          // Edges
-          /*opencv.loadImage(thresholdImage);
-          
-          // Dilate and erode to close holes
-          opencv.dilate();
-          opencv.erode();
-          opencv.findCannyEdges(20,75);*/
+          contours = opencv.findContours(true, true);
+    
+          // Get stage elements from contours
+          stageElements.addAll(getStageElements(contours, NONE));
         }
       }
+      
+    // Color filtering
+    } else if (method == COLOR_FILTER) {
+      
+      updateVideoSource();
+      
+      // Get RED Contours
+      ArrayList<Contour> redContours = filterContoursByColor(redH);
+      contours.addAll(redContours);
+      stageElements.addAll(getStageElements(redContours, RED));
+      
+      // Get GREEN Contours
+      ArrayList<Contour> greenContours = filterContoursByColor(greenH);
+      contours.addAll(greenContours);
+      stageElements.addAll(getStageElements(greenContours, GREEN));
+      
+      // Get BLUE Contours
+      ArrayList<Contour> blueContours = filterContoursByColor(blueH);
+      contours.addAll(blueContours);
+      stageElements.addAll(getStageElements(blueContours, BLUE));
     }
     
-    contours = opencv.findContours(true, true);
+    //println("found " + stageElements.size() + " stage elements");
     
-    // Get stage elements from contours
-    return getStageElements(contours);
+    return stageElements;
+  }
+  
+  // Filter by color
+  ArrayList<Contour> filterContoursByColor(int hueValue) {
+    
+    // background updated in updateVideoSource
+    //opencv.loadImage(background);
+    
+    opencv.useColor(HSB);
+    opencv.setGray(opencv.getH().clone());
+    opencv.inRange(hueValue-rangeWidth/2, hueValue+rangeWidth/2);
+    //opencv.dilate();
+    opencv.erode();
+    
+    //image(opencv.getOutput(), 3*width/4, 3*height/4, width/4, height/4);
+    
+    return opencv.findContours(true,true);
   }
   
   // Function that filters stage elements from a given countours array
   // Returns cloned array for perform manipulation outside
-  private ArrayList<Rectangle> getStageElements(ArrayList<Contour> contoursArray) {
+  private ArrayList<StageElement> getStageElements(ArrayList<Contour> contoursArray, int type) {
     
-    ArrayList<Rectangle> clonedStageElements = new ArrayList<Rectangle>();
-    stageElements = new ArrayList<Rectangle>();
+    ArrayList<StageElement> tempStageElements = new ArrayList<StageElement>();
+    //ArrayList<StageElement> clonedStageElements = new ArrayList<StageElement>();
+    //stageElements = new ArrayList<StageElement>();
     
     for (Contour contour : contoursArray) {
-      noFill();
+      /*noFill();
       stroke(0, 255, 0);
       strokeWeight(3);
-      contour.draw();
+      contour.draw();*/
       
       Rectangle r = contour.getBoundingBox();
       
@@ -218,38 +259,29 @@ class StageDetector {
           (r.width < 20 || r.height < 20))
         continue;
       
-      stageElements.add(r);
-      clonedStageElements.add((Rectangle)(r.clone()));
+      StageElement stageElement = new StageElement(r, type);
+      tempStageElements.add(stageElement);
+      //stageElements.add(stageElement);
+      //clonedStageElements.add((StageElement)(stageElement.clone()));
     }
     
-    return clonedStageElements;
+    return tempStageElements;
+    //return clonedStageElements;
   }
   
   
-  ///////////////////////////////////////////////
+  ////////////////////////////
+  // VIDEO SOURCE Functions
+  ////////////////////////////  
+  
   // Recalculate Background & Stage key images
-  ///////////////////////////////////////////////
   
   // When a key is pressed, capture the background image into the backgroundPixels
   // buffer, by copying each of the current frame's pixels into it.
   public void initBackground() {
     println("Background Initialized");
     
-    if (source == CAPTURE && video != null) {
-      
-      if (video.available()) {
-        video.read();
-      }
-      
-      //opencv.useColor();
-      opencv.loadImage(video);
-      background = opencv.getSnapshot();
-    
-    } else if (source == KINECT && kinect != null) {
-      kinect.update();
-      opencv.loadImage(kinect.rgbImage());
-      background = opencv.getSnapshot();
-    }
+    updateVideoSource();
     
     // Reset stage
     stage = null;
@@ -259,20 +291,28 @@ class StageDetector {
   
   public void initStage() {
     println("Stage Initialized");
+    updateVideoSource();
+    stageInitialized = true;
+  }
+  
+  void updateVideoSource() {
     
-    if (source == CAPTURE && video.available()) {
-      video.read();
-      //opencv.useColor();
+    // CAPTURE
+    if (source == CAPTURE && video != null) {
+      if (video.available()) {
+        video.read();
+      }
       opencv.loadImage(video);
-      stage = opencv.getSnapshot();
+      opencv.useColor(HSB);
+      background = opencv.getSnapshot();
     
+    // KINECT
     } else if (source == KINECT && kinect != null) {
       kinect.update();
       opencv.loadImage(kinect.rgbImage());
-      stage = opencv.getSnapshot();
+      opencv.useColor(HSB);
+      background = opencv.getSnapshot();
     }
-  
-    stageInitialized = true;
   }
   
   
@@ -308,11 +348,12 @@ class StageDetector {
     }
   }
   
-  void displayContours() {
-  
-    if (contours == null || contours.size() == 0) 
+  void displayStageElements() {
+    
+    //if (contours == null || contours.size() == 0)
+    if (contours.size() == 0)
       return;
-      
+    
     noFill();
     strokeWeight(3);
     
@@ -325,11 +366,24 @@ class StageDetector {
     }*/
     
     // Detected stage elements
-    for (Rectangle r : stageElements) {  
-      stroke(255, 0, 0);
-      fill(255, 0, 0, 150);
+    for (StageElement stageElement : stageElements) {  
+      
+      if (stageElement.type == RED) {
+        stroke(255, 0, 0);
+        fill(255, 0, 0, 150);
+      } else if (stageElement.type == GREEN) {
+        stroke(0, 255, 0);
+        fill(0, 255, 0, 100);
+      } else if (stageElement.type == BLUE) {
+        stroke(0, 0, 255);
+        fill(0, 0, 255, 100);
+      } else {
+        stroke(0);
+        fill(0, 60);
+      }
+        
       strokeWeight(2);
-      rect(r.x, r.y, r.width, r.height);
+      rect(stageElement.rect.x, stageElement.rect.y, stageElement.rect.width, stageElement.rect.height);
     }
   }
 }

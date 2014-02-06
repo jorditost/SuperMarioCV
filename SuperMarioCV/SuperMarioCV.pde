@@ -8,6 +8,11 @@
    TO DOs
    =======
    
+   - Plants / Fire -> Interaktion // displayStageElements()
+   - Mario soll nicht rutschen
+   - Realtime
+   
+   
    StageDetector:
    - Unify display() and displayBackground() functions for all detection methods and sources
    
@@ -18,9 +23,8 @@
  
 import processing.opengl.*;
 import gab.opencv.*;
-import java.awt.Rectangle;
 
-boolean test = false;
+boolean test = true;
 boolean showOnProjector = true;
 Boolean realtimeDetect = false;
 
@@ -34,7 +38,9 @@ Boolean realtimeDetect = false;
 
 int screenWidth = 800;
 int screenHeight = 600;
-float scaleFactor = 1;
+float scaleFactor = 1.25;
+
+int backgroundColor = 0;
 
 // Jump & Run vars
 float DOWN_FORCE = 2;
@@ -46,7 +52,7 @@ MarioLevel marioLevel;
 
 // Background Detection vars
 StageDetector stage;
-ArrayList<Rectangle> stageElements;
+ArrayList<StageElement> stageElements;
 
 // Realtime vars
 int t, detectionRate = 2000;
@@ -85,7 +91,7 @@ void setup() {
   setupGameEngine();
 
   // Detect stage elements and initialize game
-  stageElements = scaleRectanglesArray(stage.detect(), scaleFactor);
+  stageElements = scaleStageElementsArray(stage.detect(), scaleFactor);
   initializeGame();
 
   frameRate(30);
@@ -95,7 +101,7 @@ void setup() {
 void draw() {
   
   // Realtime detection for
-  if (stage.method == EDGES && realtimeDetect && (millis() - t >= detectionRate)) {
+  if ((stage.method == EDGES || stage.method == COLOR_FILTER) && realtimeDetect && (millis() - t >= detectionRate)) {
     detectStage();
     updateGameStage();
     t = millis();
@@ -107,7 +113,7 @@ void draw() {
   if (showOnProjector) {
     
     noStroke();
-    fill(0);
+    fill(backgroundColor);
     rect(0,0,width,height);
     
     /*if (realtimeDetect) {
@@ -117,6 +123,8 @@ void draw() {
     } else {
       stage.displayBackground();  
     }*/
+    
+    if (test) stage.displayStageElements();
     
   } else {
     if (realtimeDetect) {
@@ -169,7 +177,7 @@ void updateGameStage() {
 }
 
 void detectStage() {
-  stageElements = scaleRectanglesArray(stage.detect(), scaleFactor);
+  stageElements = scaleStageElementsArray(stage.detect(), scaleFactor);
 }
 
 ////////////////////
@@ -237,13 +245,13 @@ class MarioLevel extends Level {
   MarioLayer marioLayer;
   
   // Constructor passing platforms array (stage elements)
-  MarioLevel(float levelWidth, float levelHeight, ArrayList<Rectangle> platformsArray) {
+  MarioLevel(float levelWidth, float levelHeight, ArrayList<StageElement> platformsArray) {
     super(levelWidth, levelHeight);
     marioLayer = new MarioLayer(this, platformsArray);
     addLevelLayer("layer", marioLayer);
   }
   
-  public void updatePlatforms(ArrayList<Rectangle> platformsArray) {
+  public void updatePlatforms(ArrayList<StageElement> platformsArray) {
      marioLayer.updatePlatforms(platformsArray);
   }
 }
@@ -254,7 +262,7 @@ class MarioLayer extends LevelLayer {
   float marioStartX = width/12 + 30;
   float marioStartY = height/2;
   
-  MarioLayer(Level owner, ArrayList<Rectangle> platformsArray) {
+  MarioLayer(Level owner, ArrayList<StageElement> platformsArray) {
     super(owner);
     
     // Add static platforms (walls, ground, etc.)
@@ -307,7 +315,7 @@ class MarioLayer extends LevelLayer {
     }*/
   }
 
-  public void updatePlatforms(ArrayList<Rectangle> platformsArray) {
+  public void updatePlatforms(ArrayList<StageElement> platformsArray) {
     
     // Clear old boundaries
     //clearDynamicPlatforms();
@@ -392,9 +400,9 @@ class MarioLayer extends LevelLayer {
   }
 
   // Add all level platforms given a rectangles array
-  void addDynamicPlatforms(ArrayList<Rectangle> platformsArray) {
-    for (Rectangle r : platformsArray) {
-      addDynamicPlatform(r.x, r.y, r.width, r.height);
+  void addDynamicPlatforms(ArrayList<StageElement> platformsArray) {
+    for (StageElement stageElement : platformsArray) {
+      addDynamicPlatform(stageElement.rect.x, stageElement.rect.y, stageElement.rect.width, stageElement.rect.height);
     }
   }
   

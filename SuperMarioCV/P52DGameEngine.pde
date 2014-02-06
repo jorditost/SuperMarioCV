@@ -685,7 +685,9 @@ class Boundary extends Positionable {
    */
   void drawObject() {
     strokeWeight(1);
-    stroke(255);
+    if (backgroundColor == 255) stroke(0);
+    else                        stroke(255);
+    
     line(0, 0, dx, dy);
 
     // draw an arrow to indicate the pass-through direction

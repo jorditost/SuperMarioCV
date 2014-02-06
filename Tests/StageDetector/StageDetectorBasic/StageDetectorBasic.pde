@@ -6,11 +6,17 @@ Capture video;
 StageDetector stage;
 ArrayList<Rectangle> stageElements;
 
+Boolean realtimeUpdate = true;
+
 void setup() {
   
   //stage = new StageDetector(this, "after4.jpg");
-  stage = new StageDetector(this);
- 
+  stage = new StageDetector(this, 640, 480, KINECT);
+  stage.setSource(KINECT);
+  //stage.setMethod(IMAGE_DIFF);
+  stage.setMethod(EDGES);
+  stage.setEdgesThreshold(70);
+  
   size(stage.width, stage.height);
   frameRate(30);
   
@@ -18,20 +24,33 @@ void setup() {
 }
 
 void draw() {
-  stage.displayBackground();
-  stage.displayContours();
   
-  /*for (Rectangle r : stageElements) {  
-    stroke(255, 0, 0);
-    fill(255, 0, 0, 150);
-    strokeWeight(2);
-    rect(r.x, r.y, r.width, r.height);
-  }*/
+  if (stage.method == EDGES && realtimeUpdate) {
+    stage.detect();
+  }
+  
+  stage.display();
+  //stage.displayBackground();
+  stage.displayContours();
 }
 
 void keyPressed() { 
-  if (key == ENTER) {
+  /*if (key == ENTER) {
     println(">>>>> DETECT!");
     stageElements = stage.detect();
+  }*/
+  
+  if (key == ENTER) {
+    stage.initBackground();
+    if (stage.method == EDGES) {
+      stage.detect();
+    }
+    
+  } else if (key == ' ') {
+    
+    if (stage.method == IMAGE_DIFF) {
+      stage.initStage();
+      stage.detect();
+    }
   }
 }

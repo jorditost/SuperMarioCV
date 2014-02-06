@@ -1,8 +1,8 @@
- import gab.opencv.*;
-import processing.video.*;
+import SimpleOpenNI.*;
+import gab.opencv.*;
 import java.awt.Rectangle;
 
-Capture video;
+SimpleOpenNI kinect;
 OpenCV opencv;
 ArrayList<Contour> contours;
 
@@ -11,19 +11,23 @@ int rangeLow = 150;
 int rangeHigh = 160;
 
 void setup() {
-  video = new Capture(this, 640, 480);
-  opencv = new OpenCV(this, video.width, video.height);
+  
+  kinect = new SimpleOpenNI(this);
+  kinect.enableRGB();
+  
+  opencv = new OpenCV(this, 640, 480);
   size(opencv.width, opencv.height, P2D);
   contours = new ArrayList<Contour>();
-  
-  video.start();
 }
 
 void draw() {
-  image(video, 0, 0);
+  
+  kinect.update();
+  
+  image(kinect.rgbImage(), 0, 0);
 
   // <2> Load the new frame of our movie in to OpenCV
-  opencv.loadImage(video);
+  opencv.loadImage(kinect.rgbImage());
   
   // <3> Tell OpenCV to work in HSV color space.
   opencv.useColor(HSB);
@@ -66,10 +70,6 @@ void draw() {
     fill(255, 0, 0);
     ellipse(r.x + r.width/2, r.y + r.height/2, 30, 30);
   }
-}
-
-void captureEvent(Capture c) {
-  c.read();
 }
 
 void mousePressed() {
