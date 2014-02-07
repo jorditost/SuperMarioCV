@@ -25,7 +25,7 @@ import processing.opengl.*;
 import gab.opencv.*;
 
 boolean test = true;
-boolean showOnProjector = true;
+boolean showOnProjector = false;
 Boolean realtimeDetect = false;
 
 //int screenWidth = 640;
@@ -66,8 +66,8 @@ int t, detectionRate = 2000;
 
 void setup() {
 
-  //stage = new StageDetector(this, "after4.jpg");
-  stage = new StageDetector(this, 640, 480, KINECT);
+  stage = new StageDetector(this, "after4.jpg");
+  //stage = new StageDetector(this, 640, 480, KINECT);
   //stage.setSource(CAPTURE);
   stage.setMethod(EDGES);
   stage.setEdgesThreshold(70);
@@ -397,7 +397,27 @@ class MarioLayer extends LevelLayer {
     // the ground now has an unjumpable gap:
     addGround("ground", 0, height-48, width/4, height);
     addGround("ground", width-(width/4), height-48, width, height);
+    
+    // Add some other static platforms
+    addStaticPlatform(0, height-100, 300, 100);
   }
+  
+  void addRectangle(float x, float y, float w, float h, int type) {
+    addBoundary(new Boundary(x, y, x+w, y, type));
+    addBoundary(new Boundary(x+w, y, x+w, y+h, type));
+    addBoundary(new Boundary(x+w, y+h, x, y+h, type));
+    addBoundary(new Boundary(x, y+h, x, y, type));
+  }
+  
+  // Add a dynamic platform
+  void addDynamicPlatform(float x, float y, float w, float h) {
+    addRectangle(x, y, w, h, DYNAMIC);
+  }
+  
+  void addStaticPlatform(float x, float y, float w, float h) {
+    addRectangle(x, y, w, h, STATIC);
+  }
+  
 
   // Add all level platforms given a rectangles array
   void addDynamicPlatforms(ArrayList<StageElement> platformsArray) {
@@ -409,14 +429,6 @@ class MarioLayer extends LevelLayer {
   // Clear dynamic platforms
   void clearDynamicPlatforms() {
     clearDynamicBoundaries();
-  }
-  
-  // Add a floating platform
-  void addDynamicPlatform(float x, float y, float w, float h) {
-    addBoundary(new Boundary(x, y, x+w, y, DYNAMIC));
-    addBoundary(new Boundary(x+w, y, x+w, y+h, DYNAMIC));
-    addBoundary(new Boundary(x+w, y+h, x, y+h, DYNAMIC));
-    addBoundary(new Boundary(x, y+h, x, y, DYNAMIC));
   }
   
   // add coins over a horizontal stretch  
