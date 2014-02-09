@@ -25,7 +25,7 @@ import processing.opengl.*;
 import gab.opencv.*;
 
 boolean test = true;
-boolean showOnProjector = false;
+boolean showOnProjector = true;
 Boolean realtimeDetect = false;
 
 //int screenWidth = 640;
@@ -66,11 +66,12 @@ int t, detectionRate = 2000;
 
 void setup() {
 
-  stage = new StageDetector(this, "after4.jpg");
-  //stage = new StageDetector(this, 640, 480, KINECT);
+  //stage = new StageDetector(this, "after4.jpg");
+  stage = new StageDetector(this, 640, 480, KINECT);
   //stage.setSource(CAPTURE);
-  stage.setMethod(EDGES);
-  stage.setEdgesThreshold(70);
+  stage.setMethod(COLOR_FILTER);
+  //stage.setMethod(EDGES);
+  //stage.setEdgesThreshold(70);
 
   screenWidth = int(scaleFactor*stage.width);
   screenHeight = int(scaleFactor*stage.height);
