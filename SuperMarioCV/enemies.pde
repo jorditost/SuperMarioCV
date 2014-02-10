@@ -149,7 +149,7 @@ class Koopa extends MarioEnemy {
     super("Koopa Trooper");
     setStates();
     setForces(-0.25, DOWN_FORCE);    
-    setImpulseCoefficients(DAMPENING, DAMPENING);
+    setImpulseCoefficients(DAMPENING+0.25, DAMPENING+0.25);
     setPosition(x,y);
   }
   

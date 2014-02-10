@@ -24,16 +24,12 @@
 import processing.opengl.*;
 import gab.opencv.*;
 
-boolean test = false;
-static boolean showOnProjector = true;
+boolean test = true;
+static boolean showOnProjector = false;
 
 // Realtime vars
 Boolean realtimeDetect = true;
 int t, detectionRate = 1000;
-
-//int screenWidth = 512;
-//int screenHeight = 432;
-//float scaleFactor = 0.5;
 
 int screenWidth = 800;
 int screenHeight = 600;
@@ -44,7 +40,7 @@ int backgroundColor = 0;
 // Jump & Run vars
 float DOWN_FORCE = 2;
 float ACCELERATION = 1.3;
-float DAMPENING = 0.75;
+float DAMPENING = 0.5;
 
 // Level vars
 MarioLevel marioLevel;
@@ -69,6 +65,12 @@ void setup() {
   //stage.setMethod(COLOR_FILTER);
   stage.setMethod(EDGES);
   //stage.setEdgesThreshold(70);
+  
+  if (stage.source == IMAGE_SRC) {
+    screenWidth = 512;
+    screenHeight = 432;
+    scaleFactor = 0.5; 
+  }
 
   screenWidth = int(scaleFactor*stage.width);
   screenHeight = int(scaleFactor*stage.height);
@@ -141,13 +143,13 @@ void draw() {
   SoundManager.draw();
 }
 
-void init(){
+/*void init(){
  if (showOnProjector) {
    frame.dispose();  
    frame.setUndecorated(true);
    super.init();
  }
-}
+}*/
 
 
 //////////////////////////
@@ -583,7 +585,8 @@ class MarioLayer extends LevelLayer {
 class Mario extends Player {
 
   int score = 0;
-  float speed = 2;
+  float speed = 4;
+  float jumpImpulse = -60;
   float initX, initY;
   boolean isDying;
   
@@ -744,7 +747,7 @@ class Mario extends Player {
     if (active.mayChange() && isKeyDown('W') && boundaries.size()>0) {
       ignore('W');
       // generate a massive impulse upward
-      addImpulse(0, -35);
+      addImpulse(0, jumpImpulse);
       // and make sure we look like we're jumping, too
       if (active.name!="crouching") {
         setCurrentState("jumping");
