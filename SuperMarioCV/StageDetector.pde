@@ -24,10 +24,10 @@ static int EDGES                = 1;
 static int IMAGE_DIFF           = 2;
 static int COLOR_FILTER         = 3;
 
-int redH = 167; //6;
-int greenH = 105; //44;
-int blueH = 0; //110;
-int rangeWidth = 10; //5;
+int redH = 3; //167;
+int greenH = 37; //105;
+int blueH = 119; //0;
+int rangeWidth = 5;
 
 class StageDetector {
   
@@ -204,17 +204,20 @@ class StageDetector {
       // Get RED Contours
       ArrayList<Contour> redContours = filterContoursByColor(redH);
       contours.addAll(redContours);
-      stageElements.addAll(getStageElements(redContours, RED));
+      ArrayList<StageElement> redStageElements = getStageElements(redContours, RED); 
+      stageElements.addAll(redStageElements);
       
       // Get GREEN Contours
       ArrayList<Contour> greenContours = filterContoursByColor(greenH);
       contours.addAll(greenContours);
-      stageElements.addAll(getStageElements(greenContours, GREEN));
+      ArrayList<StageElement> greenStageElements = getStageElements(greenContours, GREEN);
+      stageElements.addAll(greenStageElements);
       
       // Get BLUE Contours
       ArrayList<Contour> blueContours = filterContoursByColor(blueH);
       contours.addAll(blueContours);
-      stageElements.addAll(getStageElements(blueContours, BLUE));
+      ArrayList<StageElement> blueStageElements = getStageElements(blueContours, BLUE);
+      stageElements.addAll(blueStageElements);
     }
     
     //println("found " + stageElements.size() + " stage elements");
@@ -255,7 +258,7 @@ class StageDetector {
       Rectangle r = contour.getBoundingBox();
       
       if (//(contour.area() > 0.9 * src.width * src.height) ||
-          (r.width < 20 || r.height < 20))
+          (r.width < 20 && r.height < 20))
         continue;
       
       StageElement stageElement = new StageElement(r, type);

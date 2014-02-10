@@ -24,17 +24,20 @@
 import processing.opengl.*;
 import gab.opencv.*;
 
-boolean test = true;
-boolean showOnProjector = false;
+boolean test = false;
+static boolean showOnProjector = true;
+
+// Realtime vars
 Boolean realtimeDetect = true;
+int t, detectionRate = 1000;
 
-int screenWidth = 512;
-int screenHeight = 432;
-float scaleFactor = 0.5;
+//int screenWidth = 512;
+//int screenHeight = 432;
+//float scaleFactor = 0.5;
 
-//int screenWidth = 800;
-//int screenHeight = 600;
-//float scaleFactor = 1.25;
+int screenWidth = 800;
+int screenHeight = 600;
+float scaleFactor = 1.25;
 
 int backgroundColor = 0;
 
@@ -50,8 +53,6 @@ MarioLevel marioLevel;
 StageDetector stage;
 ArrayList<StageElement> stageElements;
 
-// Realtime vars
-int t, detectionRate = 2000;
 
 ///////////
 // Setup
@@ -62,11 +63,11 @@ int t, detectionRate = 2000;
 
 void setup() {
 
-  stage = new StageDetector(this, "input/after4.jpg");
-  //stage = new StageDetector(this, 640, 480, KINECT);
+  //stage = new StageDetector(this, "input/after4.jpg");
+  stage = new StageDetector(this, 640, 480, KINECT);
   //stage.setSource(CAPTURE);
-  stage.setMethod(COLOR_FILTER);
-  //stage.setMethod(EDGES);
+  //stage.setMethod(COLOR_FILTER);
+  stage.setMethod(EDGES);
   //stage.setEdgesThreshold(70);
 
   screenWidth = int(scaleFactor*stage.width);
@@ -140,13 +141,13 @@ void draw() {
   SoundManager.draw();
 }
 
-/*void init(){
+void init(){
  if (showOnProjector) {
    frame.dispose();  
    frame.setUndecorated(true);
    super.init();
  }
-}*/
+}
 
 
 //////////////////////////
@@ -262,7 +263,7 @@ class MarioLevel extends Level {
 class MarioLayer extends LevelLayer {
   
   Mario mario;
-  float marioStartX = width/12 + 30;
+  float marioStartX = width/12 + 25;
   float marioStartY = height/2;
   
   ArrayList<StageElement> dynamicPlatforms;
@@ -277,8 +278,21 @@ class MarioLayer extends LevelLayer {
     addDynamicPlatforms(platformsArray);
     
     // Add Coins
-    addCoins(width-160,height-70,68);
-    addCoins(364,105,68);
+    addCoins(width-100,height-115,68);
+    addCoins(width-100,height-135,68);
+    addCoins(width-100,height-155,68);
+    addCoins(width-100,height-175,68);
+    addCoins(width-100,height-195,68);
+    addCoins(width-100,height-215,68);
+    addCoins(width-100,height-235,68);
+    addCoins(width-100,height-255,68);
+    addCoins(width-100,height-275,68);
+    addCoins(width-100,height-295,68);
+    
+    addCoins(360,85,68);
+    addCoins(360,105,68);
+    addCoins(360,125,68);
+    
     /*addCoins(247,200,12);
     addCoins(247,180,12);
     addCoins(247,160,12);
@@ -299,6 +313,9 @@ class MarioLayer extends LevelLayer {
     
     Koopa koopa2 = new Koopa(280, 100);
     addInteractor(koopa2);
+    
+    Koopa koopa3 = new Koopa(width-10, 100);
+    addInteractor(koopa3);
 
     if (test) showBoundaries = true;
     mario = new Mario(marioStartX, marioStartY);
@@ -359,8 +376,10 @@ class MarioLayer extends LevelLayer {
     //addGroundPlatform("ground", width-(width/4), height-40, width/4, 40);
     
     // the ground now has an unjumpable gap:
-    addGround("ground", 0, height-48, width/4, height);
-    addGround("ground", width-(width/4), height-48, width, height);
+    addStaticPlatform(0, height-75, 280, height);
+    addStaticPlatform(width-260, height-70, width, height);
+    //addGround("ground", 0, height-75, 280, height);
+    //addGround("ground", width-280, height-75, width, height);
     
     // Add some other static platforms
     //addStaticPlatform(0, height-100, 300, 100);

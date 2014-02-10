@@ -24,9 +24,10 @@ static int EDGES                = 1;
 static int IMAGE_DIFF           = 2;
 static int COLOR_FILTER         = 3;
 
-int redH = 6; //163;
-int greenH = 42; //37;
-int blueH = 110; //114;
+int redH = 3; //167;
+int magentaH = 167; //167;
+int greenH = 41; //105;
+int blueH = 111; //0;
 int rangeWidth = 5;
 
 class StageDetector {
@@ -204,17 +205,23 @@ class StageDetector {
       // Get RED Contours
       ArrayList<Contour> redContours = filterContoursByColor(redH);
       contours.addAll(redContours);
-      stageElements.addAll(getStageElements(redContours, RED));
+      ArrayList<StageElement> redStageElements = getStageElements(redContours, RED); 
+      println("Red elements found: " + redStageElements.size());
+      stageElements.addAll(redStageElements);
       
       // Get GREEN Contours
       ArrayList<Contour> greenContours = filterContoursByColor(greenH);
       contours.addAll(greenContours);
-      stageElements.addAll(getStageElements(greenContours, GREEN));
+      ArrayList<StageElement> greenStageElements = getStageElements(greenContours, GREEN);
+      println("Green elements found: " + greenStageElements.size());
+      stageElements.addAll(greenStageElements);
       
       // Get BLUE Contours
       ArrayList<Contour> blueContours = filterContoursByColor(blueH);
       contours.addAll(blueContours);
-      stageElements.addAll(getStageElements(blueContours, BLUE));
+      ArrayList<StageElement> blueStageElements = getStageElements(blueContours, BLUE);
+      println("Blue elements found: " + blueStageElements.size());
+      stageElements.addAll(blueStageElements);
     }
     
     //println("found " + stageElements.size() + " stage elements");
@@ -243,9 +250,9 @@ class StageDetector {
   // Returns cloned array for perform manipulation outside
   private ArrayList<StageElement> getStageElements(ArrayList<Contour> contoursArray, int type) {
     
+    println("Detect color: " + type + ", contours: " + contoursArray.size());
     ArrayList<StageElement> tempStageElements = new ArrayList<StageElement>();
     //ArrayList<StageElement> clonedStageElements = new ArrayList<StageElement>();
-    //stageElements = new ArrayList<StageElement>();
     
     for (Contour contour : contoursArray) {
       /*noFill();
@@ -261,12 +268,10 @@ class StageDetector {
       
       StageElement stageElement = new StageElement(r, type);
       tempStageElements.add(stageElement);
-      //stageElements.add(stageElement);
       //clonedStageElements.add((StageElement)(stageElement.clone()));
     }
     
     return tempStageElements;
-    //return clonedStageElements;
   }
   
   
