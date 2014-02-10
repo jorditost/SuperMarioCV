@@ -33,8 +33,8 @@ class StageElement {
   public Object clone() { 
      StageElement tmp = new StageElement(); 
      tmp.type = type;
-     tmp.rect = rect;
-     //tmp.rect = (Rectangle)(rect.clone());
+     //tmp.rect = rect;
+     tmp.rect = (Rectangle)(rect.clone());
      return tmp; 
   } 
 }

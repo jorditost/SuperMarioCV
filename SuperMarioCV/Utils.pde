@@ -1,11 +1,22 @@
 ArrayList<StageElement> scaleStageElementsArray(ArrayList<StageElement> array, float factor) {
+  
+  // We have to clone the stage elements so as not to modify original values from StageDetector
+  
+  ArrayList<StageElement> clonedArray = new ArrayList<StageElement>();
+  
   for (StageElement stageElement : array) {
-    stageElement.rect.x      *= factor;
-    stageElement.rect.y      *= factor;
-    stageElement.rect.width  *= factor;
-    stageElement.rect.height *= factor;
+    
+    StageElement clonedStageElement = (StageElement)(stageElement.clone());
+    
+    clonedStageElement.rect.x      *= factor;
+    clonedStageElement.rect.y      *= factor;
+    clonedStageElement.rect.width  *= factor;
+    clonedStageElement.rect.height *= factor;
+    
+    clonedArray.add(clonedStageElement);
   }
-  return array;
+  
+  return clonedArray;
 }
 
 ArrayList<Rectangle> scaleRectanglesArray(ArrayList<Rectangle> array, float factor) {

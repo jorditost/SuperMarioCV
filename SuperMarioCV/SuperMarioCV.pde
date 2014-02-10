@@ -25,20 +25,16 @@ import processing.opengl.*;
 import gab.opencv.*;
 
 boolean test = true;
-boolean showOnProjector = true;
-Boolean realtimeDetect = false;
+boolean showOnProjector = false;
+Boolean realtimeDetect = true;
 
-//int screenWidth = 640;
-//int screenHeight = 480;
-//float scaleFactor = 1;
+int screenWidth = 512;
+int screenHeight = 432;
+float scaleFactor = 0.5;
 
-//int screenWidth = 512;
-//int screenHeight = 432;
-//float scaleFactor = 0.5;
-
-int screenWidth = 800;
-int screenHeight = 600;
-float scaleFactor = 1.25;
+//int screenWidth = 800;
+//int screenHeight = 600;
+//float scaleFactor = 1.25;
 
 int backgroundColor = 0;
 
@@ -66,8 +62,8 @@ int t, detectionRate = 2000;
 
 void setup() {
 
-  //stage = new StageDetector(this, "after4.jpg");
-  stage = new StageDetector(this, 640, 480, KINECT);
+  stage = new StageDetector(this, "input/after4.jpg");
+  //stage = new StageDetector(this, 640, 480, KINECT);
   //stage.setSource(CAPTURE);
   stage.setMethod(COLOR_FILTER);
   //stage.setMethod(EDGES);
@@ -133,7 +129,8 @@ void draw() {
     } else {
       stage.displayBackground();  
     }
-    //if (test) stage.displayContours();  
+    
+    if (test) stage.displayStageElements();
   }
   
   popMatrix();
@@ -143,13 +140,13 @@ void draw() {
   SoundManager.draw();
 }
 
-void init(){
+/*void init(){
  if (showOnProjector) {
    frame.dispose();  
    frame.setUndecorated(true);
    super.init();
  }
-}
+}*/
 
 
 //////////////////////////
@@ -252,6 +249,11 @@ class MarioLevel extends Level {
     addLevelLayer("layer", marioLayer);
   }
   
+//  void updateMario(Player mario_new) {
+//    updatePlayer(mario, mario_new);
+//    mario = mario_new;
+//  }
+  
   public void updatePlatforms(ArrayList<StageElement> platformsArray) {
      marioLayer.updatePlatforms(platformsArray);
   }
@@ -263,57 +265,44 @@ class MarioLayer extends LevelLayer {
   float marioStartX = width/12 + 30;
   float marioStartY = height/2;
   
+  ArrayList<StageElement> dynamicPlatforms;
+  
   MarioLayer(Level owner, ArrayList<StageElement> platformsArray) {
     super(owner);
     
     // Add static platforms (walls, ground, etc.)
     addStaticPlatforms();
-
+    
     // Add dynamic platforms (post-its)
     addDynamicPlatforms(platformsArray);
     
     // Add Coins
     addCoins(width-160,height-70,68);
     addCoins(364,105,68);
-    addCoins(247,200,12);
+    /*addCoins(247,200,12);
     addCoins(247,180,12);
     addCoins(247,160,12);
-    addCoins(247,140,12);
+    addCoins(247,140,12);*/
     
+    // Add Pipes
+    // add two teleporters on either side of the gap
+    /*Pipe t1 = addPipe(width/4-16, height-48);
+    Pipe t2 = addPipe(3*width/4-64, height-48);
+ 
+    // and link them together
+    t1.teleportTo(t2);
+    t2.teleportTo(t1);*/
+
     // Add Enemies
     Koopa koopa = new Koopa(width/4, height-178);
     addInteractor(koopa);
     
     Koopa koopa2 = new Koopa(280, 100);
     addInteractor(koopa2);
-    
-    //Koopa koopa3 = new Koopa(width - (width/12), height-178);
-    //addInteractor(koopa3);
 
     if (test) showBoundaries = true;
     mario = new Mario(marioStartX, marioStartY);
     addPlayer(mario);
-  }
-  
-  // for convenience we change the draw function
-  // so that if Mario falls outside the screen,
-  // we put him back at his start position:
-  void draw() {
-    super.draw();
-    
-    if (mario.y > height && !mario.isDying) {
-      mario.die();
-    }
-      
-    /*if (!mario.isDying) {
-      if (mario.y > height) {
-        mario.die();
-      }
-    } else {
-      if (mario.y > height + 100) {
-        mario.resurrect();
-      }
-    }*/
   }
 
   public void updatePlatforms(ArrayList<StageElement> platformsArray) {
@@ -322,7 +311,8 @@ class MarioLayer extends LevelLayer {
     //clearDynamicPlatforms();
     
     // Clear everything except player
-    clearExceptPlayer();
+    clearPlatforms();
+    //clearExceptPlayer();
     
     mario.updatePosition();
     
@@ -331,6 +321,69 @@ class MarioLayer extends LevelLayer {
     
     // Add floating platforms (post-its)
     addDynamicPlatforms(platformsArray);
+  }
+  
+  void clearPlatforms() {
+    clearBoundaries();
+    clearBackground();
+    clearForeground();
+    //clearDecals();
+    //clearTriggers();
+    //clearPickups();
+    //clearInteractors();    
+  }
+  
+  // for convenience we change the draw function
+  // so that if Mario falls outside the screen,
+  // we put him back at his start position:
+  void draw() {
+    super.draw();
+    
+    // Die
+    if (mario.y > height && !mario.isDying) {
+      mario.die();
+    }
+  }
+  
+  // Add static platforms (ground, walls
+  void addStaticPlatforms() {
+    // Ground and walls
+    addBoundary(new Boundary(-1, 0, -1, height, STATIC));
+    addBoundary(new Boundary(width+1, height, width+1, 0, STATIC));
+
+    // Add some ground platforms, some with coins
+    //addGroundPlatform("ground", 40+width/2, height-144, 40, 90);
+    //addGroundPlatform("ground", width/2, height-96, 68, 48);
+    
+    //addGroundPlatform("ground", 0, height-40, width/4, 40);
+    //addGroundPlatform("ground", width-(width/4), height-40, width/4, 40);
+    
+    // the ground now has an unjumpable gap:
+    addGround("ground", 0, height-48, width/4, height);
+    addGround("ground", width-(width/4), height-48, width, height);
+    
+    // Add some other static platforms
+    //addStaticPlatform(0, height-100, 300, 100);
+  }
+  
+  // Add all level platforms given a rectangles array
+  void addDynamicPlatforms(ArrayList<StageElement> platformsArray) {
+    for (StageElement stageElement : platformsArray) {
+      addDynamicPlatform(stageElement.rect.x, stageElement.rect.y, stageElement.rect.width, stageElement.rect.height);
+      
+      if (stageElement.type == GREEN) {
+        //BanzaiBill banzai = new BanzaiBill(stageElement.rect.x, stageElement.rect.y);
+        //addInteractor(banzai);
+        
+        Muncher muncher = new Muncher(stageElement.rect.x+0.5*stageElement.rect.width, stageElement.rect.y-8);
+        addInteractor(muncher);
+      }
+    }
+  }
+  
+  // Clear dynamic platforms
+  void clearDynamicPlatforms() {
+    clearDynamicBoundaries();
   }
 
   // Add some ground.
@@ -381,28 +434,6 @@ class MarioLayer extends LevelLayer {
     addBoundary(new Boundary(x, y, x+w, y, STATIC));
   }
   
-  // Add static platforms (ground, walls
-  void addStaticPlatforms() {
-    // Ground and walls
-    //addBoundary(new Boundary(0, height, width, height, STATIC));
-    addBoundary(new Boundary(-1, 0, -1, height, STATIC));
-    addBoundary(new Boundary(width+1, height, width+1, 0, STATIC));
-
-    // Add some ground platforms, some with coins
-    //addGroundPlatform("ground", 40+width/2, height-144, 40, 90);
-    //addGroundPlatform("ground", width/2, height-96, 68, 48);
-    
-    //addGroundPlatform("ground", 0, height-40, width/4, 40);
-    //addGroundPlatform("ground", width-(width/4), height-40, width/4, 40);
-    
-    // the ground now has an unjumpable gap:
-    addGround("ground", 0, height-48, width/4, height);
-    addGround("ground", width-(width/4), height-48, width, height);
-    
-    // Add some other static platforms
-    addStaticPlatform(0, height-100, 300, 100);
-  }
-  
   void addRectangle(float x, float y, float w, float h, int type) {
     addBoundary(new Boundary(x, y, x+w, y, type));
     addBoundary(new Boundary(x+w, y, x+w, y+h, type));
@@ -419,19 +450,6 @@ class MarioLayer extends LevelLayer {
     addRectangle(x, y, w, h, STATIC);
   }
   
-
-  // Add all level platforms given a rectangles array
-  void addDynamicPlatforms(ArrayList<StageElement> platformsArray) {
-    for (StageElement stageElement : platformsArray) {
-      addDynamicPlatform(stageElement.rect.x, stageElement.rect.y, stageElement.rect.width, stageElement.rect.height);
-    }
-  }
-  
-  // Clear dynamic platforms
-  void clearDynamicPlatforms() {
-    clearDynamicBoundaries();
-  }
-  
   // add coins over a horizontal stretch  
   void addCoins(float x, float y, float w) {
     float step = 16, i = 0, last = w/step;
@@ -439,6 +457,104 @@ class MarioLayer extends LevelLayer {
       addForPlayerOnly(new Coin(x+8+i*step,y));
     }
   }
+  
+  // And finally, the end of the level!
+  void addGoal(float xpos, float hpos) {
+    hpos += 1;
+    // background post
+    Sprite goal_b = new Sprite("graphics/assorted/Goal-back.gif");
+    goal_b.align(CENTER, BOTTOM);
+    goal_b.setPosition(xpos, hpos);
+    addBackgroundSprite(goal_b);
+    // foreground post
+    Sprite goal_f = new Sprite("graphics/assorted/Goal-front.gif");
+    goal_f.align(CENTER, BOTTOM);
+    goal_f.setPosition(xpos+32, hpos);
+    addForegroundSprite(goal_f);
+    // the finish line rope
+    addForPlayerOnly(new Rope(xpos, hpos-16));
+  }
+  
+  /**
+   * Add a teleporter pipe
+   */
+   
+  Pipe addPipe(float x, float y) {
+    Pipe p = new Pipe(x, y);
+    addBoundedInteractor(p);
+    addForegroundSprite(p.head);
+    addForegroundSprite(p.body);
+    addTrigger(p.trigger);
+    return p;
+  }
+
+  // places a single tube with all the boundaries and behaviours
+  /*void addTube(float x, float y, TeleportTrigger teleporter) {
+    // pipe head as foreground, so we can disappear behind it.
+    Sprite pipe_head = new Sprite("graphics/assorted/Pipe-head.gif");
+    pipe_head.align(LEFT, BOTTOM);
+    pipe_head.setPosition(x, y-16);
+    addForegroundSprite(pipe_head);
+
+    // active pipe; use a removable boundary for the top
+    if (teleporter!=null) {
+      Boundary lid = new PipeBoundary(x, y-16-32, x+32, y-16-32);
+      teleporter.setLid(lid);
+      addBoundary(lid);
+    }
+
+    // plain pipe; use a normal boundary for the top
+    else { 
+      addBoundary(new Boundary(x, y-16-32, x+32, y-16-32));
+    }
+
+    // pipe body as background
+    Sprite pipe = new Sprite("graphics/assorted/Pipe-body.gif");
+    pipe.align(LEFT, BOTTOM);
+    pipe.setPosition(x, y);
+    addBackgroundSprite(pipe);
+
+    if (teleporter!=null) {
+      // add a trigger region for active pipes
+      addTrigger(teleporter);
+      // add an invisible boundery inside the pipe, so
+      // that actors don't fall through when the top
+      // boundary is removed.
+      addBoundary(new Boundary(x+1, y-16, x+30, y-16));
+      // make sure the teleport trigger has the right
+      // dimensions and positioning.
+      teleporter.setArea(x+16, y-20, 16, 4);
+    }
+
+    // And add side-walls, so that actors don't run
+    // through the pipe as if it weren't there.
+    addBoundary(new Boundary(x+32, y-16-32, x+32, y));
+    addBoundary(new Boundary(x+32, y, x, y));
+    addBoundary(new Boundary(x, y, x, y-16-32));
+    
+  }
+  
+  // places a single tube with all the boundaries and behaviours, upside down
+  void addUpsideDownTube(float x, float y) {
+    // pipe body as background
+    Sprite pipe = new Sprite("graphics/assorted/Pipe-body.gif");
+    pipe.align(LEFT, TOP);
+    pipe.setPosition(x, y);
+    addBackgroundSprite(pipe);
+
+    // pipe head as foreground, so we can disappear behind it.
+    Sprite pipe_head = new Sprite("graphics/assorted/Pipe-head.gif");
+    pipe_head.align(LEFT, TOP);
+    pipe_head.flipVertical();
+    pipe_head.setPosition(x, y+16);
+    addForegroundSprite(pipe_head);
+
+    // And add side-walls and the bottom "lid.
+    addBoundary(new Boundary(x, y+16+32, x, y));
+    addBoundary(new Boundary(x+32, y, x+32, y+16+32));
+
+    addBoundary(new Boundary(x+32, y+16+32, x, y+16+32));
+  }*/
 }
 
 //////////////////
@@ -451,36 +567,63 @@ class Mario extends Player {
   float speed = 2;
   float initX, initY;
   boolean isDying;
+  
+  boolean canShoot = false;
 
   Mario(float x, float y) {
     super("Mario");
     setupStates();
+    setCurrentState("idle");
     setPosition(x, y);
     initX = x;
     initY = y;
-    handleKey(char(UP));
+    handleKey('W');
+    //handleKey(char(UP));
     handleKey(char(RIGHT));
     handleKey(char(LEFT));
+    handleKey(char(DOWN));
     setForces(0, DOWN_FORCE);
     setAcceleration(0, ACCELERATION);
     setImpulseCoefficients(DAMPENING, DAMPENING);
     isDying = false;
   }
+  
+  void addState(State st) {
+    st.sprite.anchor(CENTER, BOTTOM);
+    super.addState(st);
+  }
 
   void setupStates() {
+    
+    // idling state
     addState(new State("idle", "graphics/mario/small/Standing-mario.gif"));
+    
+    // crouching state
+    addState(new State("crouching", "graphics/mario/small/Crouching-mario.gif"));
+    
+    // running state
     addState(new State("running", "graphics/mario/small/Running-mario.gif", 1, 4));
-
+    
+    // dead state
     State dead = new State("dead", "graphics/mario/small/Dead-mario.gif", 1, 2);
     dead.setAnimationSpeed(0.25);
     dead.setDuration(15);
-    addState(dead);   
-
+    addState(dead);
+    SoundManager.load(dead, "audio/Dead-mario.mp3");
+  
+    // jumping state
     State jumping = new State("jumping", "graphics/mario/small/Jumping-mario.gif");
-    jumping.setDuration(12);
+    jumping.setDuration(15);
     addState(jumping);
-
-    setCurrentState("idle");
+    SoundManager.load(jumping, "audio/Jump.mp3");
+    
+    State crouchjumping = new State("crouchjumping", "graphics/mario/small/Crouching-mario.gif");
+    crouchjumping.setDuration(15);
+    addState(crouchjumping);
+    SoundManager.load(crouchjumping, "audio/Jump.mp3");
+    
+    // being hit requires a sound effect too
+    SoundManager.load("mario hit", "audio/Pipe.mp3");
   }
   
   // what happens when we touch another player or NPC?
@@ -498,7 +641,7 @@ class Mario extends Player {
       if (PI/2 - tolerance <= angle && angle <= PI/2 + tolerance) {
         // we hit it from above!
         // 1) squish the koopa trooper
-        koopa.squish();
+        koopa.hit();
         // Stop moving in whichever direction we were moving in
         stop(0,0);
         // instead, jump up!
@@ -525,7 +668,6 @@ class Mario extends Player {
   }
   
   void resurrect() {
-    println("RESURRECT!!!");
     removeActor();
     resetGame();
     //setPosition(initX, initY);
@@ -538,14 +680,7 @@ class Mario extends Player {
     //jsupdate();
     //verifyInMotion();
   }
-  
-  /*public void restart() {
-   removeActor();
-   //reset();
-   setCurrentState("idle");
-   //setPosition(initX, initY);
-   }*/
-
+ 
   void handleStateFinished(State which) {
     
     if (which.name == "dead") {
@@ -562,31 +697,68 @@ class Mario extends Player {
   // Keyboard interaction
   void handleInput() {
     
+    // we don't handle any input when we're dead~
+    if (active.name=="dead" || active.name=="won") return;
     if (isDying) return;
 
-    // handle running
-    if (isKeyDown(char(LEFT)) || isKeyDown(char(RIGHT))) {
+    // what do we "do"? (i.e. movement wise)
+    if (active.name!="crouching" && (isKeyDown(char(LEFT)) || isKeyDown(char(RIGHT)))) {
       if (isKeyDown(char(LEFT))) {
+        // when we walk left, we need to flip the sprite
         setHorizontalFlip(true);
+        // walking left means we get a negative impulse along the x-axis:
         addImpulse(-speed, 0);
+        // and we set the viewing direction to "left"
+        setViewDirection(-1, 0);
       }
       if (isKeyDown(char(RIGHT))) {
+        // when we walk right, we need to NOT flip the sprite =)
         setHorizontalFlip(false);
+        // walking right means we get a positive impulse along the x-axis:
         addImpulse(speed, 0);
+        // and we set the viewing direction to "right"
+        setViewDirection(1, 0);
       }
     }
 
-    // handle jumping
-    if (isKeyDown(char(UP)) && active.name!="jumping" && boundaries.size()>0) {
+    // if the jump key is pressed, and we're standing on something, let's jump! 
+    if (active.mayChange() && isKeyDown('W') && boundaries.size()>0) {
+      ignore('W');
+      // generate a massive impulse upward
       addImpulse(0, -35);
-      setCurrentState("jumping");
+      // and make sure we look like we're jumping, too
+      if (active.name!="crouching") {
+        setCurrentState("jumping");
+      } else {
+        setCurrentState("crouchjumping");
+      }
+      SoundManager.play(active);
     }
 
-    if (active.mayChange()) {
-      if (isKeyDown(char(LEFT)) || isKeyDown(char(RIGHT))) {
-        setCurrentState("running");
+    // if we're not jumping, but left or right is pressed,
+    // make sure we're using the "running" state.
+    if (isKeyDown(char(DOWN))) {
+      /*if (boundaries.size()>0) {
+        for(Boundary b: boundaries) {
+          if(b instanceof PipeBoundary) {
+            ((PipeBoundary)b).trigger(this);
+          }
+        }
+      }*/
+      if (active.name=="jumping") { setCurrentState("crouchjumping"); }
+      else { setCurrentState("crouching"); }
+    }
+
+    // and what do we look like when we do this?
+    if (active.mayChange())
+    {
+      if (active.name!="crouching" && (isKeyDown(char(LEFT)) || isKeyDown(char(RIGHT)))) {
+       setCurrentState("running");
       }
-      else { 
+
+      // if we're not actually doing anything,
+      // then we change the state to "idle"
+      else if (noKeysDown()) {
         setCurrentState("idle");
       }
     }
@@ -604,88 +776,6 @@ class Mario extends Player {
     else if (pickup.name=="Dragon coin") {
       score+=100;
     }
-  }
-}
-
-/**
- * All pickups in Mario may move, and if
- * they do, they will bounce when hitting
- * a clean boundary.
- */
-class MarioPickup extends Pickup {
-  MarioPickup(String name, String spritesheet, int rows, int columns, float x, float y, boolean visible) {
-    super(name, spritesheet, rows, columns, x, y, visible);
-  }
-  void gotBlocked(Boundary b, float[] intersection) {
-    if (intersection[0]-x==0 && intersection[1]-y==0) {
-      fx = -fx;
-      active.sprite.flipHorizontal();
-    }
-  }
-}
-
-/**
- * A regular coin
- */
-class Coin extends MarioPickup {
-  Coin(float x, float y) {
-    super("Regular coin", "graphics/assorted/Regular-coin.gif", 1, 4, x, y, true);
-  }
-}
-
-class Koopa extends Interactor {
-  // we construct a Koopa trooper pretty much the same way we did Mario:
-  Koopa(float x, float y) {
-    super("Koopa Trooper");
-    setStates();
-    setForces(-0.05, DOWN_FORCE);
-    //setForces(-0.25, DOWN_FORCE);    
-    setImpulseCoefficients(DAMPENING, DAMPENING);
-    setPosition(x,y);
-  }
-  
-  // And we use states.
-  void setStates() {
-    // walking state
-    State walking = new State("idle", "graphics/enemies/Red-koopa-walking.gif", 1, 2);
-    walking.setAnimationSpeed(0.12);
-    addState(walking);
-    
-    // if we get squished, we first lose our shell.
-    State noshell = new State("noshell", "graphics/enemies/Naked-koopa-walking.gif", 1, 2);
-    noshell.setAnimationSpeed(0.12);
-    addState(noshell);
-    
-    setCurrentState("idle");
-  }
-  
-  void gotBlocked(Boundary b, float[] intersection) {
-    
-    // is the boundary vertical?
-    if (b.x == b.xw) {
-      // yes it is. Reverse direction!
-      fx = -fx;
-      setHorizontalFlip(fx > 0);
-    }
-  }
-  
-  void squish() {
-    // do we have our shell? Then we only get half-squished.
-    if (active.name != "noshell") {
-      setCurrentState("noshell");
-      return;
-    }
-    // no shell... this koopa is toast.
-    removeActor();
-  }
-}
-
-/**
- * A dragon coin!
- */
-class DragonCoin extends MarioPickup {
-  DragonCoin(float x, float y) {
-    super("Dragon coin", "graphics/assorted/Dragon-coin.gif", 1, 10, x, y, true);
   }
 }
 

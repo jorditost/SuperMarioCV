@@ -24,10 +24,10 @@ static int EDGES                = 1;
 static int IMAGE_DIFF           = 2;
 static int COLOR_FILTER         = 3;
 
-int redH = 6; //163;
-int greenH = 42; //37;
-int blueH = 110; //114;
-int rangeWidth = 5;
+int redH = 167; //6;
+int greenH = 105; //44;
+int blueH = 0; //110;
+int rangeWidth = 10; //5;
 
 class StageDetector {
   
@@ -245,7 +245,6 @@ class StageDetector {
     
     ArrayList<StageElement> tempStageElements = new ArrayList<StageElement>();
     //ArrayList<StageElement> clonedStageElements = new ArrayList<StageElement>();
-    //stageElements = new ArrayList<StageElement>();
     
     for (Contour contour : contoursArray) {
       /*noFill();
@@ -261,12 +260,10 @@ class StageDetector {
       
       StageElement stageElement = new StageElement(r, type);
       tempStageElements.add(stageElement);
-      //stageElements.add(stageElement);
       //clonedStageElements.add((StageElement)(stageElement.clone()));
     }
     
     return tempStageElements;
-    //return clonedStageElements;
   }
   
   
