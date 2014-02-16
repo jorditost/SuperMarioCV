@@ -31,7 +31,7 @@ class BanzaiBill extends MarioEnemy {
   BanzaiBill(float mx, float my) {
     super("Banzai Bill", 1, 1);
     setPosition(mx, my);
-    setImpulse(-0.5, 0);
+    setImpulse(-1, 0);
     setForces(0, 0);
     setAcceleration(0, 0);
     setupStates();
@@ -54,12 +54,59 @@ class BanzaiBill extends MarioEnemy {
   /**
    * What happens when we touch another actor?
    */
-  void overlapOccurredWith(Actor other, float[] direction) {
+  /*void overlapOccurredWith(Actor other, float[] direction) {
     if (other instanceof Mario) {
       Mario m = (Mario) other;
       m.hit();
     }
+  }*/
+  
+  /**
+   * Nothing happens at the moment
+   */
+  void hit() {}
+}
+
+/**
+ * The small bullet that comes out of nowhere O_O
+ */
+class BanzaiBullet extends MarioEnemy {
+
+  /**
+   * Relatively straight-forward constructor
+   */
+  BanzaiBullet(float mx, float my) {
+    super("Banzai Bullet", 1, 1);
+    setPosition(mx, my+8);
+    setImpulse(-3, 0);
+    setForces(0, 0);
+    setAcceleration(0, 0);
+    setupStates();
+    // Banzai Bills do not care about boundaries or NPCs!
+    setPlayerInteractionOnly(true);
+    persistent = false;
   }
+
+  /**
+   * Banzai bill flies with great purpose.
+   */
+  void setupStates() {
+    State flying = new State("flying", "graphics/enemies/Banzai-bullet.gif");
+    //SoundManager.load(flying, "audio/Banzai.mp3");
+    addState(flying);
+    setCurrentState("flying");
+    //SoundManager.play(flying);
+  }
+
+  /**
+   * What happens when we touch another actor?
+   */
+  /*void overlapOccurredWith(Actor other, float[] direction) {
+    if (other instanceof Mario) {
+      Mario m = (Mario) other;
+      m.hit();
+    }
+  }*/
   
   /**
    * Nothing happens at the moment
@@ -272,11 +319,13 @@ class Muncher extends BoundedMarioEnemy {
   }
 
   void setupStates() {
+    //State munch = new State("munch", "graphics/enemies/Blume2.png", 1, 2);
     State munch = new State("munch", "graphics/enemies/Muncher.gif", 1, 2);
     munch.setAnimationSpeed(0.20);
     addState(munch);
     
     // if we get squished, we first get naked...
+    //State hidden = new State("munch", "graphics/enemies/Blume2.png", 1, 2);
     State hidden = new State("hidden", "graphics/enemies/Muncher.gif", 1, 2);
     hidden.setAnimationSpeed(0.20);
     addState(hidden);

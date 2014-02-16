@@ -8,11 +8,6 @@
    TO DOs
    =======
    
-   - Plants / Fire -> Interaktion // displayStageElements()
-   - Mario soll nicht rutschen
-   - Realtime
-   
-   
    StageDetector:
    - Unify display() and displayBackground() functions for all detection methods and sources
    
@@ -26,6 +21,14 @@ import gab.opencv.*;
 
 boolean test = true;
 static boolean showOnProjector = false;
+
+/*void init(){
+ if (showOnProjector) {
+   frame.dispose();  
+   frame.setUndecorated(true);
+   super.init();
+ }
+}*/
 
 // Realtime vars
 Boolean realtimeDetect = true;
@@ -59,11 +62,11 @@ ArrayList<StageElement> stageElements;
 
 void setup() {
 
-  //stage = new StageDetector(this, "input/after4.jpg");
-  stage = new StageDetector(this, 640, 480, KINECT);
+  stage = new StageDetector(this, "input/after4.jpg");
+  //stage = new StageDetector(this, 640, 480, KINECT);
   //stage.setSource(CAPTURE);
   //stage.setMethod(COLOR_FILTER);
-  stage.setMethod(EDGES);
+  stage.setMethod(HYBRID);
   //stage.setEdgesThreshold(70);
   
   if (stage.source == IMAGE_SRC) {
@@ -101,7 +104,7 @@ void setup() {
 void draw() {
   
   // Realtime detection for
-  if ((stage.method == EDGES || stage.method == COLOR_FILTER) && realtimeDetect && (millis() - t >= detectionRate)) {
+  if ((stage.method != IMAGE_DIFF) && realtimeDetect && (millis() - t >= detectionRate)) {
     detectStage();
     updateGameStage();
     t = millis();
@@ -115,14 +118,6 @@ void draw() {
     noStroke();
     fill(backgroundColor);
     rect(0,0,width,height);
-    
-    /*if (realtimeDetect) {
-      noStroke();
-      fill(0);
-      rect(0,0,width,height);
-    } else {
-      stage.displayBackground();  
-    }*/
     
     if (test) stage.displayStageElements();
     
@@ -142,14 +137,6 @@ void draw() {
   activeScreen.draw(); 
   SoundManager.draw();
 }
-
-/*void init(){
- if (showOnProjector) {
-   frame.dispose();  
-   frame.setUndecorated(true);
-   super.init();
- }
-}*/
 
 
 //////////////////////////
@@ -252,11 +239,6 @@ class MarioLevel extends Level {
     addLevelLayer("layer", marioLayer);
   }
   
-//  void updateMario(Player mario_new) {
-//    updatePlayer(mario, mario_new);
-//    mario = mario_new;
-//  }
-  
   public void updatePlatforms(ArrayList<StageElement> platformsArray) {
      marioLayer.updatePlatforms(platformsArray);
   }
@@ -265,10 +247,20 @@ class MarioLevel extends Level {
 class MarioLayer extends LevelLayer {
   
   Mario mario;
-  float marioStartX = width/12 + 25;
-  float marioStartY = height/2;
+  float marioStartX = 36;
+  //float marioStartX = width/12 + 25;
+  float marioStartY = height-90;
+  
+  boolean staticTubeInitialized = false;
+  float staticTubeX;
+  float staticTubeY;
+  float lastDynamicTubeX = -1;
+  float lastDynamicTubeY = -1;
   
   ArrayList<StageElement> dynamicPlatforms;
+  
+  ArrayList<PVector> muncherPositions;
+  ArrayList<PVector> banzaiBillPositions;
   
   MarioLayer(Level owner, ArrayList<StageElement> platformsArray) {
     super(owner);
@@ -279,51 +271,14 @@ class MarioLayer extends LevelLayer {
     // Add dynamic platforms (post-its)
     addDynamicPlatforms(platformsArray);
     
-    // Add Coins
-    addCoins(width-100,height-115,68);
-    addCoins(width-100,height-135,68);
-    addCoins(width-100,height-155,68);
-    addCoins(width-100,height-175,68);
-    addCoins(width-100,height-195,68);
-    addCoins(width-100,height-215,68);
-    addCoins(width-100,height-235,68);
-    addCoins(width-100,height-255,68);
-    addCoins(width-100,height-275,68);
-    addCoins(width-100,height-295,68);
-    
-    addCoins(360,85,68);
-    addCoins(360,105,68);
-    addCoins(360,125,68);
-    
-    /*addCoins(247,200,12);
-    addCoins(247,180,12);
-    addCoins(247,160,12);
-    addCoins(247,140,12);*/
-    
-    // Add Pipes
-    // add two teleporters on either side of the gap
-    /*Pipe t1 = addPipe(width/4-16, height-48);
-    Pipe t2 = addPipe(3*width/4-64, height-48);
- 
-    // and link them together
-    t1.teleportTo(t2);
-    t2.teleportTo(t1);*/
-
-    // Add Enemies
-    Koopa koopa = new Koopa(width/4, height-178);
-    addInteractor(koopa);
-    
-    Koopa koopa2 = new Koopa(280, 100);
-    addInteractor(koopa2);
-    
-    Koopa koopa3 = new Koopa(width-10, 100);
-    addInteractor(koopa3);
+    // Hardcoded interactive elements (coins, koopas)
+    addInteractiveElements();
 
     if (test) showBoundaries = true;
     mario = new Mario(marioStartX, marioStartY);
     addPlayer(mario);
   }
-
+ 
   public void updatePlatforms(ArrayList<StageElement> platformsArray) {
     
     // Clear old boundaries
@@ -366,41 +321,156 @@ class MarioLayer extends LevelLayer {
   
   // Add static platforms (ground, walls
   void addStaticPlatforms() {
+    
     // Ground and walls
     addBoundary(new Boundary(-1, 0, -1, height, STATIC));
     addBoundary(new Boundary(width+1, height, width+1, 0, STATIC));
-
-    // Add some ground platforms, some with coins
-    //addGroundPlatform("ground", 40+width/2, height-144, 40, 90);
-    //addGroundPlatform("ground", width/2, height-96, 68, 48);
-    
-    //addGroundPlatform("ground", 0, height-40, width/4, 40);
-    //addGroundPlatform("ground", width-(width/4), height-40, width/4, 40);
     
     // the ground now has an unjumpable gap:
     addStaticPlatform(0, height-75, 280, height);
     addStaticPlatform(width-260, height-70, width, height);
-    //addGround("ground", 0, height-75, 280, height);
-    //addGround("ground", width-280, height-75, width, height);
     
-    // Add some other static platforms
-    //addStaticPlatform(0, height-100, 300, 100);
+    // Add blocks
+    addBlocks(160, height-130, 5, 1);
+    
+    // Add clouds
+    addClouds(width/2+15, 20, 4, 1);
+    addClouds(width/2+15, 20+16, 1, 3);
+    addClouds(width/2+15+(3*16), 20+16, 1, 3);
+    
+    // Add Tubes
+    addStaticTube(104, height-70);
+    //addDynamicTube(144, height-70);
+    //addTube(104,height-70, new TeleportTrigger(156,height-120));  
+    //addTube(144,height-70, new TeleportTrigger(116,height-120));
+  }
+  
+  void addInteractiveElements() {
+    
+    // Add Coins
+    addCoins(width-100,height-115,68);
+    addCoins(width-100,height-135,68);
+    addCoins(width-100,height-155,68);
+    addCoins(width-100,height-175,68);
+    addCoins(width-100,height-195,68);
+    addCoins(width-100,height-215,68);
+    addCoins(width-100,height-235,68);
+    addCoins(width-100,height-255,68);
+    addCoins(width-100,height-275,68);
+    addCoins(width-100,height-295,68);
+    
+    // Add cloud coins
+    addCoins(width/2+39, 52, 12);
+    addCoins(width/2+39, 72, 12);
+    
+    // Add Enemies
+    Koopa koopa = new Koopa(width/4, height-178);
+    addInteractor(koopa);
+    
+    Koopa koopa2 = new Koopa(280, 100);
+    addInteractor(koopa2);
+    
+    Koopa koopa3 = new Koopa(width-10, 100);
+    addInteractor(koopa3);
   }
   
   // Add all level platforms given a rectangles array
   void addDynamicPlatforms(ArrayList<StageElement> platformsArray) {
     for (StageElement stageElement : platformsArray) {
-      addDynamicPlatform(stageElement.rect.x, stageElement.rect.y, stageElement.rect.width, stageElement.rect.height);
       
+      // Check tube
       if (stageElement.type == GREEN) {
-        //BanzaiBill banzai = new BanzaiBill(stageElement.rect.x, stageElement.rect.y);
-        //addInteractor(banzai);
+        checkTube(stageElement);
+      
+      // Check Banzai
+      } else if (stageElement.type == RED) {
+        checkBanzaiBill(stageElement);
+        addDynamicPlatform(stageElement.rect.x, stageElement.rect.y, stageElement.rect.width, stageElement.rect.height);
         
-        Muncher muncher = new Muncher(stageElement.rect.x+0.5*stageElement.rect.width, stageElement.rect.y-8);
-        addInteractor(muncher);
+      // General behaviour
+      } else {
+        addDynamicPlatform(stageElement.rect.x, stageElement.rect.y, stageElement.rect.width, stageElement.rect.height);
       }
     }
   }
+  
+  void checkTube(StageElement stageElement) {
+    
+    // Avoid small platforms
+    if (stageElement.rect.width < 15 ||  
+    // Avoid landscape oriented platforms
+       float(stageElement.rect.width / stageElement.rect.height) > 1.5) {
+         
+      addDynamicPlatform(stageElement.rect.x, stageElement.rect.y, stageElement.rect.width, stageElement.rect.height);
+      return;
+    }
+    
+    // Post-it: tunnel
+    if (float(stageElement.rect.height / stageElement.rect.width) < 2) {
+      
+      addDynamicTube(stageElement.rect.x, stageElement.rect.y, stageElement.rect.width, stageElement.rect.height);
+    
+    // Portrait mode: plant
+    } else {
+      boolean isNewMuncher = true;
+      
+      addDynamicPlatform(stageElement.rect.x, stageElement.rect.y, stageElement.rect.width, stageElement.rect.height);
+        
+      // Look if we already added it
+      if (muncherPositions == null) {
+        muncherPositions = new ArrayList<PVector>();
+        isNewMuncher = true;
+        
+      } else {
+        for (PVector pos : muncherPositions) {
+          if (abs(pos.x - stageElement.rect.x) < 20 && abs(pos.y - stageElement.rect.y) < 20) {
+            isNewMuncher = false;
+          }
+        }
+      }
+      
+      // Add new muncher
+      if (isNewMuncher) {
+        Muncher muncher = new Muncher(stageElement.rect.x+0.5*stageElement.rect.width, stageElement.rect.y-8);
+        addInteractor(muncher);
+        muncherPositions.add(new PVector(stageElement.rect.x, stageElement.rect.y));
+      } 
+    }
+  }
+  
+  void checkBanzaiBill(StageElement stageElement) {
+    
+    boolean isNewBanzai = true;
+        
+    // Look if we already added it
+    if (banzaiBillPositions == null) {
+      banzaiBillPositions = new ArrayList<PVector>();
+      isNewBanzai = true;
+      
+    } else {
+      for (PVector pos : banzaiBillPositions) {
+        if (abs(pos.x - stageElement.rect.x) < 20 && abs(pos.y - stageElement.rect.y) < 20) {
+          isNewBanzai = false;
+        }
+      }
+    }
+    
+    // Add new Banzai
+    if (isNewBanzai) {          
+      
+      if (float(stageElement.rect.height / stageElement.rect.width) > 3) {
+        BanzaiBill banzai = new BanzaiBill(width/*stageElement.rect.x*/, stageElement.rect.y);
+        addInteractor(banzai);  
+      
+      } else {
+        BanzaiBullet banzai = new BanzaiBullet(stageElement.rect.x, stageElement.rect.y);
+        addInteractor(banzai);
+      }
+      
+      banzaiBillPositions.add(new PVector(stageElement.rect.x, stageElement.rect.y));
+    }
+  }
+  
   
   // Clear dynamic platforms
   void clearDynamicPlatforms() {
@@ -414,8 +484,8 @@ class MarioLayer extends LevelLayer {
     TilingSprite groundfiller = new TilingSprite(new Sprite("graphics/backgrounds/"+tileset+"-filler.gif"), x1, y1+16, x2, y2);
     addBackgroundSprite(groundfiller);
     addBoundary(new Boundary(x1, y1, x2, y1, STATIC));
-  }  
-
+  }
+  
   // This creates the raised, angled sticking-out-ground bit.
   // it's actually a sprite, not a rotated generated bit of ground.
   void addSlant(float x, float y) {
@@ -453,6 +523,34 @@ class MarioLayer extends LevelLayer {
 
     // boundary to walk on
     addBoundary(new Boundary(x, y, x+w, y, STATIC));
+  }
+  
+  // Add blocks
+  void addBlocks(float x, float y, int nBlocksW, int nBlocksH) {
+    
+    float w = 16 * nBlocksW;
+    float h = 16 * nBlocksH;
+    
+    // Load sprite
+    Sprite blocksSprite = new Sprite("graphics/assorted/Block.gif");
+    TilingSprite blocks = new TilingSprite(blocksSprite, x, y, x+w, y+h);
+    addBackgroundSprite(blocks);
+
+    addRectangle(x, y, w, h, STATIC);
+  }
+  
+  // Add clouds
+  void addClouds(float x, float y, int nBlocksW, int nBlocksH) {
+    
+    float w = 16 * nBlocksW;
+    float h = 16 * nBlocksH;
+    
+    // Load sprite
+    Sprite cloudsSprite = new Sprite("graphics/assorted/Cloud.png");
+    TilingSprite clouds = new TilingSprite(cloudsSprite, x, y, x+w, y+h);
+    addBackgroundSprite(clouds);
+
+    addRectangle(x, y, w, h, STATIC);
   }
   
   void addRectangle(float x, float y, float w, float h, int type) {
@@ -499,18 +597,9 @@ class MarioLayer extends LevelLayer {
   /**
    * Add a teleporter pipe
    */
-   
-  Pipe addPipe(float x, float y) {
-    Pipe p = new Pipe(x, y);
-    addBoundedInteractor(p);
-    addForegroundSprite(p.head);
-    addForegroundSprite(p.body);
-    addTrigger(p.trigger);
-    return p;
-  }
 
   // places a single tube with all the boundaries and behaviours
-  /*void addTube(float x, float y, TeleportTrigger teleporter) {
+  void addTube(float x, float y, TeleportTrigger teleporter) {
     // pipe head as foreground, so we can disappear behind it.
     Sprite pipe_head = new Sprite("graphics/assorted/Pipe-head.gif");
     pipe_head.align(LEFT, BOTTOM);
@@ -555,6 +644,57 @@ class MarioLayer extends LevelLayer {
     
   }
   
+  void addStaticTube(float x, float y) {
+    
+    staticTubeX = x + 12; //156;
+    staticTubeY = y - 50; //height-120;
+    
+    addTube(x, y, new TeleportTrigger(156,height-120));
+    /*if (lastDynamicTubeX != -1 && lastDynamicTubeY != -1) {
+      addTube(x, y, new TeleportTrigger(lastDynamicTubeX, lastDynamicTubeY));
+    } else {
+      addTube(x, y, null);
+    }*/
+    
+    staticTubeInitialized = true;
+  }
+  
+  void addDynamicTube(float x, float y, float w, float h) {
+    
+    if (!staticTubeInitialized) {
+      println("Couldn't add dynamic tube. Static tube isn't initialized");
+      return;
+    }
+    
+    TeleportTrigger teleporter = new TeleportTrigger(staticTubeX, staticTubeY);
+    
+    // active pipe; use a removable boundary for the top
+    Boundary lid = new PipeBoundary(x, y, x+w, y);
+    teleporter.setLid(lid);
+    addBoundary(lid);
+      
+    // add a trigger region for active pipes
+    addTrigger(teleporter);
+    // add an invisible boundery inside the pipe, so
+    // that actors don't fall through when the top
+    // boundary is removed.
+    addBoundary(new Boundary(x, y+h-2, x+w, y+h-2));
+  
+    // make sure the teleport trigger has the right
+    // dimensions and positioning.
+    teleporter.setArea(x+w/2, y+4, w/2, 2);
+
+    // And add side-walls, so that actors don't run
+    // through the pipe as if it weren't there.
+    
+    addBoundary(new Boundary(x+w, y, x+w, y+h));
+    addBoundary(new Boundary(x+w, y+h, x, y+h));
+    addBoundary(new Boundary(x, y+h, x, y));
+    
+    lastDynamicTubeX = x;
+    lastDynamicTubeY = y+h-2;
+  }
+  
   // places a single tube with all the boundaries and behaviours, upside down
   void addUpsideDownTube(float x, float y) {
     // pipe body as background
@@ -575,7 +715,7 @@ class MarioLayer extends LevelLayer {
     addBoundary(new Boundary(x+32, y, x+32, y+16+32));
 
     addBoundary(new Boundary(x+32, y+16+32, x, y+16+32));
-  }*/
+  }
 }
 
 //////////////////
@@ -585,8 +725,8 @@ class MarioLayer extends LevelLayer {
 class Mario extends Player {
 
   int score = 0;
-  float speed = 4;
-  float jumpImpulse = -60;
+  float speed = 5;
+  float jumpImpulse = -80;
   float initX, initY;
   boolean isDying;
   
@@ -635,7 +775,7 @@ class Mario extends Player {
   
     // jumping state
     State jumping = new State("jumping", "graphics/mario/small/Jumping-mario.gif");
-    jumping.setDuration(15);
+    jumping.setDuration(10);
     addState(jumping);
     SoundManager.load(jumping, "audio/Jump.mp3");
     
@@ -673,6 +813,9 @@ class Mario extends Player {
  
       // if we didn't hit it at the correct angle, we still die =(
       else { die(); }
+    
+    } else if (other instanceof BanzaiBill || other instanceof BanzaiBullet || other instanceof Muncher) {
+      die();  
     }
   }
 
@@ -692,9 +835,6 @@ class Mario extends Player {
   void resurrect() {
     removeActor();
     resetGame();
-    //setPosition(initX, initY);
-    //setCurrentState("idle");
-    //isDying = false;
   }
   
   void updatePosition() {
@@ -760,13 +900,13 @@ class Mario extends Player {
     // if we're not jumping, but left or right is pressed,
     // make sure we're using the "running" state.
     if (isKeyDown(char(DOWN))) {
-      /*if (boundaries.size()>0) {
+      if (boundaries.size()>0) {
         for(Boundary b: boundaries) {
           if(b instanceof PipeBoundary) {
             ((PipeBoundary)b).trigger(this);
           }
         }
-      }*/
+      }
       if (active.name=="jumping") { setCurrentState("crouchjumping"); }
       else { setCurrentState("crouching"); }
     }

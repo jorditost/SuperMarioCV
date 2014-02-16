@@ -23,10 +23,11 @@ static int KINECT               = 3;
 static int EDGES                = 1;
 static int IMAGE_DIFF           = 2;
 static int COLOR_FILTER         = 3;
+static int HYBRID               = 4;
 
-int redH = 3; //167;
-int greenH = 37; //105;
-int blueH = 119; //0;
+int redH = 167; //3; //167;
+int greenH = 105; //37; //44;
+int blueH = 0; //119; //104;
 int rangeWidth = 5;
 
 class StageDetector {
@@ -143,16 +144,57 @@ class StageDetector {
   // Detect Methods
   ////////////////////
   
+  public ArrayList<StageElement> detectImageDiff() {
+    
+    // Image Difference (we need 2 images)
+    if (method != IMAGE_DIFF) {
+      return null;
+    }
+       
+    if (backgroundInitialized) {
+      pushMatrix();
+      scale(0.5);
+      image(background, 0, 0);
+      popMatrix();
+  
+      if (stageInitialized) {
+    
+        // Diff
+        opencv.loadImage(background);
+        opencv.diff(stage);
+    
+        // Calculate Threshold
+        opencv.threshold(imageDiffThreshold);
+        
+        // Reduce noise
+        opencv.erode();
+        //opencv.invert();
+    
+        // Contours
+        contours = opencv.findContours(true, true);
+  
+        // Get stage elements from contours
+        stageElements.addAll(getStageElements(contours, NONE));
+      }
+    }
+    
+    return stageElements;
+  }
   // Returns an array with bounding boxes
   public ArrayList<StageElement> detect() {
     
     contours.clear();
     stageElements.clear();
     
+    if (method == IMAGE_DIFF) {
+      return detectImageDiff();
+    } 
+    
+    // Update video sour
+    updateVideoSource();
+    
     // Edge Detection
-    if (method == EDGES) {
-      
-      updateVideoSource();
+    if (method == EDGES || method == HYBRID) {
       
       opencv.useColor(HSB);
       opencv.setGray(opencv.getS().clone());
@@ -164,65 +206,72 @@ class StageDetector {
     
       // Get stage elements from contours
       stageElements.addAll(getStageElements(contours, NONE));
-      
-    // Image Difference (we need 2 images)
-    } else if (method == IMAGE_DIFF) {
-       
-      if (backgroundInitialized) {
- 
-        pushMatrix();
-        scale(0.5);
-        image(background, 0, 0);
-        popMatrix();
+    } 
     
-        if (stageInitialized) {
-      
-          // Diff
-          opencv.loadImage(background);
-          opencv.diff(stage);
-      
-          // Calculate Threshold
-          opencv.threshold(imageDiffThreshold);
-          
-          // Reduce noise
-          opencv.erode();
-          //opencv.invert();
-      
-          // Contours
-          contours = opencv.findContours(true, true);
-    
-          // Get stage elements from contours
-          stageElements.addAll(getStageElements(contours, NONE));
-        }
-      }
-      
     // Color filtering
-    } else if (method == COLOR_FILTER) {
-      
-      updateVideoSource();
+    if (method == COLOR_FILTER || method == HYBRID) {
       
       // Get RED Contours
       ArrayList<Contour> redContours = filterContoursByColor(redH);
       contours.addAll(redContours);
       ArrayList<StageElement> redStageElements = getStageElements(redContours, RED); 
-      stageElements.addAll(redStageElements);
       
       // Get GREEN Contours
       ArrayList<Contour> greenContours = filterContoursByColor(greenH);
       contours.addAll(greenContours);
       ArrayList<StageElement> greenStageElements = getStageElements(greenContours, GREEN);
-      stageElements.addAll(greenStageElements);
       
       // Get BLUE Contours
       ArrayList<Contour> blueContours = filterContoursByColor(blueH);
       contours.addAll(blueContours);
       ArrayList<StageElement> blueStageElements = getStageElements(blueContours, BLUE);
-      stageElements.addAll(blueStageElements);
+      
+      // Check repeated elements before adding them
+      if (method == HYBRID) {
+        checkAddedElements(redStageElements, RED);
+        checkAddedElements(greenStageElements, GREEN);
+        checkAddedElements(blueStageElements, BLUE);
+      } else {
+        stageElements.addAll(redStageElements);
+        stageElements.addAll(greenStageElements);
+        stageElements.addAll(blueStageElements);
+      }
     }
     
-    //println("found " + stageElements.size() + " stage elements");
+    //println("Found " + stageElements.size() + " stage elements");
     
     return stageElements;
+  }
+  
+  void checkAddedElements(ArrayList<StageElement> newStageElements, int type) {
+    
+    for (StageElement newStageElement : newStageElements) {
+      
+      boolean isAdded = false;
+      for (int i=0; i < stageElements.size(); i++) {
+        StageElement stageElement = stageElements.get(i);
+        
+        // Check if they are the same
+        if (stageElementsAreTheSame(stageElement, newStageElement)) {
+          stageElement.type = type;
+          isAdded = true;
+          break;
+        }
+      }
+      
+      // If it wasn't added, add new
+      if (!isAdded) {
+          stageElements.add(newStageElement);
+      }
+    }
+  }
+  
+  boolean stageElementsAreTheSame(StageElement s1, StageElement s2) {
+    
+    return (abs(s1.rect.x - s2.rect.x) < 8 && 
+            abs(s1.rect.y - s2.rect.y) < 8 && 
+            abs(s1.rect.width - s2.rect.width) < 8 && 
+            abs(s1.rect.height - s2.rect.height) < 8);
   }
   
   // Filter by color
@@ -257,8 +306,7 @@ class StageDetector {
       
       Rectangle r = contour.getBoundingBox();
       
-      if (//(contour.area() > 0.9 * src.width * src.height) ||
-          (r.width < 20 && r.height < 20))
+      if (r.width < 20 && r.height < 20)
         continue;
       
       StageElement stageElement = new StageElement(r, type);

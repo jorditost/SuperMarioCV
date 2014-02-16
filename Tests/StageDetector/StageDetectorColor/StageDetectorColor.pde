@@ -10,12 +10,12 @@ Boolean realtimeUpdate = true;
 
 void setup() {
   
-  //stage = new StageDetector(this, "after4.jpg");
-  stage = new StageDetector(this, 640, 480, KINECT);
+  stage = new StageDetector(this, "after4.jpg");
+  //stage = new StageDetector(this, 640, 480, KINECT);
   //stage.setSource(KINECT);
-  stage.setMethod(COLOR_FILTER);
-  //stage.setMethod(IMAGE_DIFF);
+  //stage.setMethod(COLOR_FILTER);
   //stage.setMethod(EDGES);
+  stage.setMethod(HYBRID);
   //stage.setEdgesThreshold(70);
   
   size(stage.width, stage.height);
@@ -26,7 +26,7 @@ void setup() {
 
 void draw() {
   
-  if ((stage.method == EDGES || stage.method == COLOR_FILTER) && realtimeUpdate) {
+  if ((stage.method != IMAGE_DIFF) && realtimeUpdate) {
     stage.detect();
   }
   
