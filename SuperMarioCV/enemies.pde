@@ -1,3 +1,15 @@
+class EnemyVector {
+  float x;
+  float y;
+  float lastUsed;
+  
+  EnemyVector(float mx, float my) {
+    x = mx;
+    y = my;
+    lastUsed = millis();
+  }
+}
+
 /**
  * This lets us define enemies as being part of
  * some universal class of things, as opposed to
@@ -30,8 +42,19 @@ class BanzaiBill extends MarioEnemy {
    */
   BanzaiBill(float mx, float my) {
     super("Banzai Bill", 1, 1);
-    setPosition(mx, my);
-    setImpulse(-1, 0);
+    //setPosition(mx, my);
+    //setImpulse(-1, 0);
+    
+    if (mx < screenWidth/2) {
+      setPosition(screenWidth+22, my);
+      setImpulse(-2, 0);
+      setHorizontalFlip(false);
+    } else {
+      setPosition(-22, my);
+      setImpulse(2, 0);
+      setHorizontalFlip(true);
+    }
+    
     setForces(0, 0);
     setAcceleration(0, 0);
     setupStates();
@@ -75,10 +98,19 @@ class BanzaiBullet extends MarioEnemy {
   /**
    * Relatively straight-forward constructor
    */
-  BanzaiBullet(float mx, float my) {
+  BanzaiBullet(float mx, float my, int canonWidth) {
     super("Banzai Bullet", 1, 1);
-    setPosition(mx, my+8);
-    setImpulse(-3, 0);
+    
+    if (mx > screenWidth/2) {
+      setPosition(mx-8, my+8);
+      setImpulse(-3, 0);
+      setHorizontalFlip(false);
+    } else {
+      setPosition(mx+canonWidth+8, my+8);
+      setImpulse(3, 0);
+      setHorizontalFlip(true);
+    }
+    
     setForces(0, 0);
     setAcceleration(0, 0);
     setupStates();
@@ -313,6 +345,7 @@ class Muncher extends BoundedMarioEnemy {
   
   Muncher(float x, float y) {
     super("Muncher");
+    y-=9;
     setPosition(x,y);
     setupStates();
     addBoundary(new Boundary(x-width/2,y+2-height/2,x+width/2,y+2-height/2), true);
@@ -320,22 +353,21 @@ class Muncher extends BoundedMarioEnemy {
 
   void setupStates() {
     //State munch = new State("munch", "graphics/enemies/Blume2.png", 1, 2);
-    State munch = new State("munch", "graphics/enemies/Muncher.gif", 1, 2);
+    State munch = new State("munch", "graphics/enemies/Muncher.gif", 1, 1);
     munch.setAnimationSpeed(0.20);
     addState(munch);
     
     // if we get squished, we first get naked...
     //State hidden = new State("munch", "graphics/enemies/Blume2.png", 1, 2);
-    State hidden = new State("hidden", "graphics/enemies/Muncher.gif", 1, 2);
-    hidden.setAnimationSpeed(0.20);
-    addState(hidden);
+    //State hidden = new State("hidden", "graphics/enemies/Muncher2.gif", 1, 1);
+    //hidden.setAnimationSpeed(0.20);
+    //addState(hidden);
     
     setCurrentState("munch");
   }
 
   void collisionOccured(Boundary boundary, Actor other, float[] correction) {
-    
-    
+  
     if (other instanceof Mario) {
       ((Mario)other).hit();
     }

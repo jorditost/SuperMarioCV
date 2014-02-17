@@ -1,8 +1,37 @@
 /**
  * Tube trigger - teleports between locations
  */
+class CoinsTrigger extends Trigger {
+  float tx, ty;
+  int coinsBlockId;
+  boolean triggered;
+  
+  CoinsTrigger(int id, float tx, float ty) {
+    super("coins");
+    this.tx = tx;
+    this.ty = ty;
+    
+    this.setArea(tx+6, ty+6, 12, 12);
+    
+    coinsBlockId = id;
+    triggered = false;
+  }
+  
+  void run(LevelLayer layer, Actor actor, float[] intersection) {
+    
+    if (!triggered) {
+      println("trigger alta");
+      handleCoinsTrigger(coinsBlockId);
+      triggered = true;
+    }
+  }
+}
+
+/**
+ * Tube trigger - teleports between locations
+ */
 class TeleportTrigger extends Trigger {
-  float popup_speed = -40;
+  float popup_speed = -30;
   float tx, ty;
   Boundary lid;
   TeleportTrigger(float tx, float ty) {

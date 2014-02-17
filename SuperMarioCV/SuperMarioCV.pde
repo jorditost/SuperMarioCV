@@ -8,6 +8,11 @@
    TO DOs
    =======
    
+   TEI:
+   - Green / Red parameters 
+   - Green element proportions (tube vs. plant)
+   - Red element proportions (bullet vs. banzai)
+   
    StageDetector:
    - Unify display() and displayBackground() functions for all detection methods and sources
    
@@ -44,6 +49,8 @@ int backgroundColor = 0;
 float DOWN_FORCE = 2;
 float ACCELERATION = 1.3;
 float DAMPENING = 0.5;
+
+float bulletPeriod = 3000;
 
 // Level vars
 MarioLevel marioLevel;
@@ -136,6 +143,12 @@ void draw() {
   // to do
   activeScreen.draw(); 
   SoundManager.draw();
+  
+  /*fill(255);
+  stroke(255,0,0);
+  ellipse(screenWidth, screenHeight, 50, 50);
+  
+  println("screenwidth: " + screenWidth + ", height: " + screenHeight);*/
 }
 
 
@@ -223,6 +236,11 @@ void mouseClicked() {
   activeScreen.mouseClicked(mouseX, mouseY, mouseButton);
 }
 
+void handleCoinsTrigger(int coinsBlockId) {
+  
+  println("let's trigger alter");
+  marioLevel.triggerCoins(coinsBlockId);  
+}
 
 ///////////
 // Level
@@ -242,6 +260,10 @@ class MarioLevel extends Level {
   public void updatePlatforms(ArrayList<StageElement> platformsArray) {
      marioLayer.updatePlatforms(platformsArray);
   }
+  
+  public void triggerCoins(int id) {
+    marioLayer.triggerCoins(id); 
+  }
 }
 
 class MarioLayer extends LevelLayer {
@@ -259,8 +281,8 @@ class MarioLayer extends LevelLayer {
   
   ArrayList<StageElement> dynamicPlatforms;
   
-  ArrayList<PVector> muncherPositions;
-  ArrayList<PVector> banzaiBillPositions;
+  ArrayList<EnemyVector> muncherPositions;
+  ArrayList<EnemyVector> banzaiBillPositions;
   
   MarioLayer(Level owner, ArrayList<StageElement> platformsArray) {
     super(owner);
@@ -363,6 +385,9 @@ class MarioLayer extends LevelLayer {
     addCoins(width/2+39, 52, 12);
     addCoins(width/2+39, 72, 12);
     
+    CoinsTrigger coinsTrigger1 = new CoinsTrigger(1, width/2+39, 52);
+    addTrigger(coinsTrigger1);
+    
     // Add Enemies
     Koopa koopa = new Koopa(width/4, height-178);
     addInteractor(koopa);
@@ -394,6 +419,12 @@ class MarioLayer extends LevelLayer {
     }
   }
   
+  void triggerCoins(int coinsBlockId) {
+    
+    BanzaiBill banzai = new BanzaiBill(screenWidth/2, screenHeight/2);
+    addInteractor(banzai);  
+  }
+  
   void checkTube(StageElement stageElement) {
     
     // Avoid small platforms
@@ -418,13 +449,14 @@ class MarioLayer extends LevelLayer {
         
       // Look if we already added it
       if (muncherPositions == null) {
-        muncherPositions = new ArrayList<PVector>();
+        muncherPositions = new ArrayList<EnemyVector>();
         isNewMuncher = true;
         
       } else {
-        for (PVector pos : muncherPositions) {
-          if (abs(pos.x - stageElement.rect.x) < 20 && abs(pos.y - stageElement.rect.y) < 20) {
+        for (EnemyVector enemyVector : muncherPositions) {
+          if (abs(enemyVector.x - stageElement.rect.x) < 20 && abs(enemyVector.y - stageElement.rect.y) < 20) {
             isNewMuncher = false;
+            break;
           }
         }
       }
@@ -433,7 +465,7 @@ class MarioLayer extends LevelLayer {
       if (isNewMuncher) {
         Muncher muncher = new Muncher(stageElement.rect.x+0.5*stageElement.rect.width, stageElement.rect.y-8);
         addInteractor(muncher);
-        muncherPositions.add(new PVector(stageElement.rect.x, stageElement.rect.y));
+        muncherPositions.add(new EnemyVector(stageElement.rect.x, stageElement.rect.y));
       } 
     }
   }
@@ -441,33 +473,47 @@ class MarioLayer extends LevelLayer {
   void checkBanzaiBill(StageElement stageElement) {
     
     boolean isNewBanzai = true;
+    boolean reshootBanzai = false;
         
     // Look if we already added it
     if (banzaiBillPositions == null) {
-      banzaiBillPositions = new ArrayList<PVector>();
+      banzaiBillPositions = new ArrayList<EnemyVector>();
       isNewBanzai = true;
       
     } else {
-      for (PVector pos : banzaiBillPositions) {
-        if (abs(pos.x - stageElement.rect.x) < 20 && abs(pos.y - stageElement.rect.y) < 20) {
+      for (EnemyVector enemyVector : banzaiBillPositions) {
+        if (abs(enemyVector.x - stageElement.rect.x) < 20 && abs(enemyVector.y - stageElement.rect.y) < 20) {
           isNewBanzai = false;
+          
+          if (millis() - enemyVector.lastUsed > bulletPeriod) {
+            reshootBanzai = true;
+            enemyVector.lastUsed = millis();
+          }
         }
       }
     }
     
     // Add new Banzai
-    if (isNewBanzai) {          
+    if (isNewBanzai || reshootBanzai) {          
       
+      // Big Banzai Bill
       if (float(stageElement.rect.height / stageElement.rect.width) > 3) {
-        BanzaiBill banzai = new BanzaiBill(width/*stageElement.rect.x*/, stageElement.rect.y);
-        addInteractor(banzai);  
+        
+        if (isNewBanzai) { // Don't reshoot
+          BanzaiBill banzai = new BanzaiBill(stageElement.rect.x, stageElement.rect.y);
+          addInteractor(banzai);
+        }  
       
+      // Small Banzai Bill
       } else {
-        BanzaiBullet banzai = new BanzaiBullet(stageElement.rect.x, stageElement.rect.y);
+        BanzaiBullet banzai = new BanzaiBullet(stageElement.rect.x, stageElement.rect.y, stageElement.rect.width);
         addInteractor(banzai);
       }
       
-      banzaiBillPositions.add(new PVector(stageElement.rect.x, stageElement.rect.y));
+      // Just add if it's new
+      if (isNewBanzai) {
+        banzaiBillPositions.add(new EnemyVector(stageElement.rect.x, stageElement.rect.y));
+      }
     }
   }
   
