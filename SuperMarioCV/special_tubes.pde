@@ -11,7 +11,7 @@ class CoinsTrigger extends Trigger {
     this.tx = tx;
     this.ty = ty;
     
-    this.setArea(tx+6, ty+6, 12, 12);
+    this.setArea(tx, ty-6, 12, 24);
     
     coinsBlockId = id;
     triggered = false;
@@ -20,7 +20,6 @@ class CoinsTrigger extends Trigger {
   void run(LevelLayer layer, Actor actor, float[] intersection) {
     
     if (!triggered) {
-      println("trigger alta");
       handleCoinsTrigger(coinsBlockId);
       triggered = true;
     }

@@ -25,10 +25,10 @@ static int IMAGE_DIFF           = 2;
 static int COLOR_FILTER         = 3;
 static int HYBRID               = 4;
 
-int redH = 167; //3; //167;
-int greenH = 105; //37; //44;
+int redH = 1; //167; //167;
+int greenH = 37; //37; //105;
 int blueH = 0; //119; //104;
-int rangeWidth = 5;
+int rangeWidth = 10;
 
 class StageDetector {
   
@@ -212,9 +212,9 @@ class StageDetector {
     if (method == COLOR_FILTER || method == HYBRID) {
       
       // Get RED Contours
-      ArrayList<Contour> redContours = filterContoursByColor(redH);
+      /*ArrayList<Contour> redContours = filterContoursByColor(redH);
       contours.addAll(redContours);
-      ArrayList<StageElement> redStageElements = getStageElements(redContours, RED); 
+      ArrayList<StageElement> redStageElements = getStageElements(redContours, RED);*/ 
       
       // Get GREEN Contours
       ArrayList<Contour> greenContours = filterContoursByColor(greenH);
@@ -222,19 +222,19 @@ class StageDetector {
       ArrayList<StageElement> greenStageElements = getStageElements(greenContours, GREEN);
       
       // Get BLUE Contours
-      ArrayList<Contour> blueContours = filterContoursByColor(blueH);
+      /*ArrayList<Contour> blueContours = filterContoursByColor(blueH);
       contours.addAll(blueContours);
-      ArrayList<StageElement> blueStageElements = getStageElements(blueContours, BLUE);
+      ArrayList<StageElement> blueStageElements = getStageElements(blueContours, BLUE);*/
       
       // Check repeated elements before adding them
       if (method == HYBRID) {
-        checkAddedElements(redStageElements, RED);
+        //checkAddedElements(redStageElements, RED);
         checkAddedElements(greenStageElements, GREEN);
-        checkAddedElements(blueStageElements, BLUE);
+        //checkAddedElements(blueStageElements, BLUE);
       } else {
-        stageElements.addAll(redStageElements);
+        //stageElements.addAll(redStageElements);
         stageElements.addAll(greenStageElements);
-        stageElements.addAll(blueStageElements);
+        //stageElements.addAll(blueStageElements);
       }
     }
     
@@ -306,7 +306,8 @@ class StageDetector {
       
       Rectangle r = contour.getBoundingBox();
       
-      if (r.width < 20 && r.height < 20)
+      if ((float(r.width)/float(screenWidth) > 0.3 || float(r.height)/float(screenHeight) > 0.3) ||
+          (r.width < 20 && r.height < 20))
         continue;
       
       StageElement stageElement = new StageElement(r, type);
@@ -421,7 +422,7 @@ class StageDetector {
         fill(255, 0, 0, 150);
       } else if (stageElement.type == GREEN) {
         stroke(0, 255, 0);
-        fill(0, 255, 0, 100);
+        //fill(0, 255, 0, 100);
       } else if (stageElement.type == BLUE) {
         stroke(0, 0, 255);
         fill(0, 0, 255, 100);

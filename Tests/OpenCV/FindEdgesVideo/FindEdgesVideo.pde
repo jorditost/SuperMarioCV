@@ -1,27 +1,29 @@
- import gab.opencv.*;
-import processing.video.*;
+import gab.opencv.*;
 import java.awt.Rectangle;
+import SimpleOpenNI.*;
 
-Capture video;
 OpenCV opencv;
+SimpleOpenNI kinect;
 PImage src, processedImage, cannyImage, contoursImage;
 ArrayList<Contour> contours;
 
 void setup() {
   frameRate(30);
   
-  video = new Capture(this, 640, 480);
-  opencv = new OpenCV(this, video.width, video.height);
+  kinect = new SimpleOpenNI(this);
+  kinect.enableRGB();
+  
+  opencv = new OpenCV(this, 640, 480);
   size(opencv.width, opencv.height, P2D);
   contours = new ArrayList<Contour>();
-  
-  video.start();
 }
 
 void draw() {
+  
+  kinect.update();
 
   // Load the new frame of our movie in to OpenCV
-  opencv.loadImage(video);
+  opencv.loadImage(kinect.rgbImage());
   src = opencv.getSnapshot();
   
   // <1> Pre-process image
@@ -34,7 +36,7 @@ void draw() {
   opencv.setGray(opencv.getS().clone());
   
   // Filter the image based on threshold
-  opencv.threshold(40);
+  opencv.threshold(95);
   
   // Reduce noise
   opencv.erode();
@@ -99,7 +101,4 @@ void displayContours() {
     rect(r.x, r.y, r.width, r.height);
   }
   popMatrix();
-}
-void captureEvent(Capture c) {
-  c.read();
 }

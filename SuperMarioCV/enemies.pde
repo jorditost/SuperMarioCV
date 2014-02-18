@@ -124,10 +124,10 @@ class BanzaiBullet extends MarioEnemy {
    */
   void setupStates() {
     State flying = new State("flying", "graphics/enemies/Banzai-bullet.gif");
-    //SoundManager.load(flying, "audio/Banzai.mp3");
+    SoundManager.load(flying, "audio/Banzai.mp3");
     addState(flying);
     setCurrentState("flying");
-    //SoundManager.play(flying);
+    SoundManager.play(flying);
   }
 
   /**

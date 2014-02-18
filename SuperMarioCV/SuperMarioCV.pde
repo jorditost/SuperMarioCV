@@ -24,16 +24,16 @@
 import processing.opengl.*;
 import gab.opencv.*;
 
-boolean test = true;
-static boolean showOnProjector = false;
+boolean test = false;
+static boolean showOnProjector = true;
 
-/*void init(){
+void init(){
  if (showOnProjector) {
    frame.dispose();  
    frame.setUndecorated(true);
    super.init();
  }
-}*/
+}
 
 // Realtime vars
 Boolean realtimeDetect = true;
@@ -41,9 +41,9 @@ int t, detectionRate = 1000;
 
 int screenWidth = 800;
 int screenHeight = 600;
-float scaleFactor = 1.25;
+float scaleFactor = 1.6; //1.25;
 
-int backgroundColor = 0;
+int backgroundColor = 255;
 
 // Jump & Run vars
 float DOWN_FORCE = 2;
@@ -69,11 +69,10 @@ ArrayList<StageElement> stageElements;
 
 void setup() {
 
-  stage = new StageDetector(this, "input/after4.jpg");
-  //stage = new StageDetector(this, 640, 480, KINECT);
+  stage = new StageDetector(this, 640, 480, KINECT);
+  //stage = new StageDetector(this, "input/after4.jpg");
   //stage.setSource(CAPTURE);
-  //stage.setMethod(COLOR_FILTER);
-  stage.setMethod(HYBRID);
+  stage.setMethod(EDGES);
   //stage.setEdgesThreshold(70);
   
   if (stage.source == IMAGE_SRC) {
@@ -237,8 +236,7 @@ void mouseClicked() {
 }
 
 void handleCoinsTrigger(int coinsBlockId) {
-  
-  println("let's trigger alter");
+ 
   marioLevel.triggerCoins(coinsBlockId);  
 }
 
@@ -349,54 +347,183 @@ class MarioLayer extends LevelLayer {
     addBoundary(new Boundary(width+1, height, width+1, 0, STATIC));
     
     // the ground now has an unjumpable gap:
-    addStaticPlatform(0, height-75, 280, height);
-    addStaticPlatform(width-260, height-70, width, height);
+    //addStaticPlatform(0, height-75, 280, height);
+    //addStaticPlatform(width-260, height-70, width, height);
     
     // Add blocks
-    addBlocks(160, height-130, 5, 1);
+    //addBlocks(160, height-130, 5, 1);
     
     // Add clouds
-    addClouds(width/2+15, 20, 4, 1);
-    addClouds(width/2+15, 20+16, 1, 3);
-    addClouds(width/2+15+(3*16), 20+16, 1, 3);
+    //addClouds(width/2+15, 20, 4, 1);
+    //addClouds(width/2+15, 20+16, 1, 3);
+    //addClouds(width/2+15+(3*16), 20+16, 1, 3);
     
     // Add Tubes
-    addStaticTube(104, height-70);
-    //addDynamicTube(144, height-70);
-    //addTube(104,height-70, new TeleportTrigger(156,height-120));  
-    //addTube(144,height-70, new TeleportTrigger(116,height-120));
+    addStaticTube(124, height-350);
+    addDynamicTube(965, height-151, 40, 65);
+    
+    ///////////////////////////////////////////////////////////////////////////////////
+// PAT Adds some other static platforms
+// Tisch/BOdenPlatform
+    addStaticPlatform(0, height-80, 380, height);                  //
+    addStaticPlatform(width-380, height-80, width, height);        //
+    
+// MARIO 1 ZITAT W1-1 
+    addBlocks(116,height-196, 1, 1);
+    //addStaticPlatform(116,height-196, 16, 16);         // Pyramide +34
+    addBlocks(82, height-140, 5, 1);
+    //addStaticPlatform(82, height-140, 80, 16);       //////
+    
+// STUFEN Mario 1 W1-1
+    addBlocks(width-340, height-160, 1, 1);
+    addBlocks(width-340, height-144, 2, 1);
+    addBlocks(width-340, height-128, 3, 1);
+    addBlocks(width-340, height-112, 4, 1);
+    addBlocks(width-340, height-96, 5, 1);
+    
+// U-FORM
+    addBlocks(814, height-300, 8, 1);
+    addBlocks(814, height-316, 1, 1);
+    addBlocks(926, height-332, 1, 2);
+   
+// MARIO 3 ZITAT W1-1    
+//    addStaticPlatform(520, height-352, 64, 16);        // Kurz
+    
+    addBlocks(600, height-400, 13, 1);
+    //addStaticPlatform(600, height-400, 208, 16);       // Lang
+    
+// FREE LEVEL RÄTSEL    
+
+    addClouds(622, height-516, 4, 1);
+    addClouds(734, height-516, 12, 1);
+    addClouds(734, height-532, 1, 1);
+    addClouds(910, height-532, 1, 1);
+    
+// C-FORM +   
+    //addClouds(770, height-712, 1, 8);
+    //addClouds(786, height-712, 4, 1);
+    //addClouds(786, height-600, 4, 1);
+    addClouds(682, height-688, 5, 1);
+
+// n-FORM      
+//    addStaticPlatform(396,80,112, 16);                 // DACH
+    addClouds(396,96, 1, 6);                 // Wände
+    addClouds(492,96, 1, 6);                 // Wände
+  
+    addClouds( 32, height-430, 2, 1);        // links vom Bild  
+// 3 aus 5  
+    //addStaticPlatform(132, 36, 800, 16);           // Lang oben links  
+    addClouds( 66, 108,  1, 1);          // Block links
+    addClouds(132, 108,  1, 1);          // Block links
+    addClouds(198, 108,  1, 1);          // Block links
+    addClouds(264, 108,  1, 1);          // Block links
+    addClouds(330, 108,  1, 1);          // Block links 
+    
+//REALFAKE Platform//////////////////////////////////////
+    //WAGE-TEST
+    //addStaticPlatform(0, height-80, width, 80);      // Wage Test /109->80=29
+
+    addStaticPlatform(407, height-184, 56, 56);        // LightSwitch 
+    
+    addStaticPlatform( 66,height-350, 160, 16);        // BILD Lang unten links
+    addStaticPlatform(262,height-350,  36, 16);        // Kurz unten rechts
+    addStaticPlatform( 66,height-506, 16, 156);        // Hoch links
+    addStaticPlatform( 82,height-506, 214, 16);        // Lang oben 
+    addStaticPlatform(280,height-490, 16, 140);        // Hoch rechts
+    
+    //addStaticPlatform(width-132,height-91, 126, 32);     // Bilder Rahmen
+    //(addStaticPlatform(width-46,height-136, 70, 16); 
+    //addStaticPlatform(width-380,height-212, 64, 104);  //GAMEBOY +34
+///////////////////////////////////////////////////////////////////////////////////
   }
   
   void addInteractiveElements() {
     
-    // Add Coins
-    addCoins(width-100,height-115,68);
-    addCoins(width-100,height-135,68);
-    addCoins(width-100,height-155,68);
-    addCoins(width-100,height-175,68);
-    addCoins(width-100,height-195,68);
-    addCoins(width-100,height-215,68);
-    addCoins(width-100,height-235,68);
-    addCoins(width-100,height-255,68);
-    addCoins(width-100,height-275,68);
-    addCoins(width-100,height-295,68);
-    
-    // Add cloud coins
-    addCoins(width/2+39, 52, 12);
-    addCoins(width/2+39, 72, 12);
-    
-    CoinsTrigger coinsTrigger1 = new CoinsTrigger(1, width/2+39, 52);
+    // Single Mario Zitat W1-1
+    addCoins(116,height-251,12);
+    CoinsTrigger coinsTrigger1 = new CoinsTrigger(1, 116+12, height-251);
     addTrigger(coinsTrigger1);
     
-    // Add Enemies
-    Koopa koopa = new Koopa(width/4, height-178);
-    addInteractor(koopa);
+    // Add Enemies  
     
-    Koopa koopa2 = new Koopa(280, 100);
+    // Erster Koopa     // +34
+    Koopa koopa1 = new Koopa(180, height-94);         // Erster links
+    addInteractor(koopa1);
+    
+    // Koopa rechts unten    
+    Koopa koopa3 = new Koopa(width-148, height-94);    // Unten rechts
+    addInteractor(koopa3);
+    
+    // Koopa rechts mitte    
+    Koopa koopa2 = new Koopa(width-128, height-314);   // Mitte rechts
     addInteractor(koopa2);
     
-    Koopa koopa3 = new Koopa(width-10, 100);
-    addInteractor(koopa3);
+    // Kooper links oben    
+    Koopa koopa4 = new Koopa(width-128, height-532);   // Oben rechts
+    addInteractor(koopa4);
+  }
+  
+  void triggerCoins(int id) {
+                     
+    if (id == 1) {
+      
+      // Add cloud coins
+      addCoins(284,height-179,64);   // Postkarte COINS
+      CoinsTrigger coinsTrigger2 = new CoinsTrigger(2, 284+52, height-171);
+      addTrigger(coinsTrigger2);
+    
+    } else if (id == 2) {
+      
+      addCoins(530,height-119,64);   // Abgrund
+      CoinsTrigger coinsTrigger3 = new CoinsTrigger(3, 530+64, height-119);
+      addTrigger(coinsTrigger3);
+    
+    } else if (id == 3) {
+      
+      addCoins(600,height-448,24);   // Mario 3 W1-1 Zitat
+      addCoins(648,height-432,50);   //
+      addCoins(728,height-448,50);   // Mario 3 W1-1 Zitat
+      
+      addCoins(810,height-416,12);   // Mario 3 W1-1 Zitat
+      addCoins(842,height-448,12);   //
+      addCoins(874,height-432,12);   //
+      addCoins(890,height-464,12);   //
+      addCoins(922,height-432,12);   // Mario 3 W1-1 Zitat
+      
+      addCoins(width-52,height-332,24);
+      addCoins(width-52,height-352,24);
+      addCoins(width-52,height-372,24);
+      addCoins(width-52,height-392,24);
+      addCoins(width-52,height-412,24);
+      addCoins(width-52,height-432,24);
+      addCoins(width-52,height-452,24);
+      addCoins(width-52,height-472,24);
+      
+      CoinsTrigger coinsTrigger4 = new CoinsTrigger(4, 600,height-448);
+      addTrigger(coinsTrigger4);
+    
+    } else if (id == 4) {
+      
+       addCoins(232,height-428,12);   // im Bild
+       CoinsTrigger coinsTrigger5 = new CoinsTrigger(5, 232, height-428);
+       addTrigger(coinsTrigger5);
+       
+    } else if (id == 5) {
+      
+      addCoins(684,height-657,66);   // Unter C-FORM +
+    
+      addCoins( 66, 90, 16);          // Lücken Blöcke links oben
+      addCoins(132, 146, 16);          // Block 2 links
+      addCoins(198, 90, 16);          // Block 3 links    
+      addCoins(264, 146, 16);          // Block 4 links
+      addCoins(330, 90, 16);          // Block 5 links 
+      
+      // Wolken 'n' COINS    
+      addCoins(436,122,26);
+      addCoins(436,142,26);
+      
+      addCoins(32, height-400, 24);  // links vom Bild
+    }
   }
   
   // Add all level platforms given a rectangles array
@@ -419,12 +546,6 @@ class MarioLayer extends LevelLayer {
     }
   }
   
-  void triggerCoins(int coinsBlockId) {
-    
-    BanzaiBill banzai = new BanzaiBill(screenWidth/2, screenHeight/2);
-    addInteractor(banzai);  
-  }
-  
   void checkTube(StageElement stageElement) {
     
     // Avoid small platforms
@@ -442,7 +563,7 @@ class MarioLayer extends LevelLayer {
       addDynamicTube(stageElement.rect.x, stageElement.rect.y, stageElement.rect.width, stageElement.rect.height);
     
     // Portrait mode: plant
-    } else {
+    } /*else {
       boolean isNewMuncher = true;
       
       addDynamicPlatform(stageElement.rect.x, stageElement.rect.y, stageElement.rect.width, stageElement.rect.height);
@@ -466,8 +587,8 @@ class MarioLayer extends LevelLayer {
         Muncher muncher = new Muncher(stageElement.rect.x+0.5*stageElement.rect.width, stageElement.rect.y-8);
         addInteractor(muncher);
         muncherPositions.add(new EnemyVector(stageElement.rect.x, stageElement.rect.y));
-      } 
-    }
+      }
+    }*/
   }
   
   void checkBanzaiBill(StageElement stageElement) {
@@ -497,7 +618,7 @@ class MarioLayer extends LevelLayer {
     if (isNewBanzai || reshootBanzai) {          
       
       // Big Banzai Bill
-      if (float(stageElement.rect.height / stageElement.rect.width) > 3) {
+      if (float(stageElement.rect.height / stageElement.rect.width) > 9) {
         
         if (isNewBanzai) { // Don't reshoot
           BanzaiBill banzai = new BanzaiBill(stageElement.rect.x, stageElement.rect.y);
@@ -505,7 +626,7 @@ class MarioLayer extends LevelLayer {
         }  
       
       // Small Banzai Bill
-      } else {
+      } else if (float(stageElement.rect.height / stageElement.rect.width) > 5) {
         BanzaiBullet banzai = new BanzaiBullet(stageElement.rect.x, stageElement.rect.y, stageElement.rect.width);
         addInteractor(banzai);
       }
@@ -578,7 +699,8 @@ class MarioLayer extends LevelLayer {
     float h = 16 * nBlocksH;
     
     // Load sprite
-    Sprite blocksSprite = new Sprite("graphics/assorted/Block.gif");
+    Sprite blocksSprite = new Sprite("graphics/assorted/Cloud.png");
+    //Sprite blocksSprite = new Sprite("graphics/assorted/Block.png");
     TilingSprite blocks = new TilingSprite(blocksSprite, x, y, x+w, y+h);
     addBackgroundSprite(blocks);
 
@@ -695,7 +817,7 @@ class MarioLayer extends LevelLayer {
     staticTubeX = x + 12; //156;
     staticTubeY = y - 50; //height-120;
     
-    addTube(x, y, new TeleportTrigger(156,height-120));
+    addTube(x, y, null/*new TeleportTrigger(156,height-120)*/);
     /*if (lastDynamicTubeX != -1 && lastDynamicTubeY != -1) {
       addTube(x, y, new TeleportTrigger(lastDynamicTubeX, lastDynamicTubeY));
     } else {
@@ -728,7 +850,7 @@ class MarioLayer extends LevelLayer {
   
     // make sure the teleport trigger has the right
     // dimensions and positioning.
-    teleporter.setArea(x+w/2, y+4, w/2, 2);
+    teleporter.setArea(x+w/2, y+10, w/2, 2);
 
     // And add side-walls, so that actors don't run
     // through the pipe as if it weren't there.
@@ -771,7 +893,7 @@ class MarioLayer extends LevelLayer {
 class Mario extends Player {
 
   int score = 0;
-  float speed = 5;
+  float speed = 4;
   float jumpImpulse = -80;
   float initX, initY;
   boolean isDying;
@@ -817,7 +939,7 @@ class Mario extends Player {
     dead.setAnimationSpeed(0.25);
     dead.setDuration(15);
     addState(dead);
-    SoundManager.load(dead, "audio/Dead-mario.mp3");
+    SoundManager.load(dead, "audio/Dead.mp3");
   
     // jumping state
     State jumping = new State("jumping", "graphics/mario/small/Jumping-mario.gif");

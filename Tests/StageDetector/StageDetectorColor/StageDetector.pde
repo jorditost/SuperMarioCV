@@ -25,10 +25,10 @@ static int IMAGE_DIFF           = 2;
 static int COLOR_FILTER         = 3;
 static int HYBRID               = 4;
 
-int redH = 167; //3; //167;
-int greenH = 105; //37; //105;
-int blueH = 0; //119; //0;
-int rangeWidth = 5;
+int redH = -1; //167; //167;
+int greenH = 38; //37; //105;
+int blueH = 0; //119; //104;
+int rangeWidth = 10;
 
 class StageDetector {
   
@@ -222,23 +222,23 @@ class StageDetector {
       ArrayList<StageElement> greenStageElements = getStageElements(greenContours, GREEN);
       
       // Get BLUE Contours
-      ArrayList<Contour> blueContours = filterContoursByColor(blueH);
+      /*ArrayList<Contour> blueContours = filterContoursByColor(blueH);
       contours.addAll(blueContours);
-      ArrayList<StageElement> blueStageElements = getStageElements(blueContours, BLUE);
+      ArrayList<StageElement> blueStageElements = getStageElements(blueContours, BLUE);*/
       
       // Check repeated elements before adding them
       if (method == HYBRID) {
         checkAddedElements(redStageElements, RED);
         checkAddedElements(greenStageElements, GREEN);
-        checkAddedElements(blueStageElements, BLUE);
+        //checkAddedElements(blueStageElements, BLUE);
       } else {
         stageElements.addAll(redStageElements);
         stageElements.addAll(greenStageElements);
-        stageElements.addAll(blueStageElements);
+        //stageElements.addAll(blueStageElements);
       }
     }
     
-    println("found " + stageElements.size() + " stage elements");
+    //println("Found " + stageElements.size() + " stage elements");
     
     return stageElements;
   }
