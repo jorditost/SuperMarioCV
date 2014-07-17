@@ -24,16 +24,16 @@
 import processing.opengl.*;
 import gab.opencv.*;
 
-boolean test = false;
-static boolean showOnProjector = true;
+boolean test = true;
+static boolean showOnProjector = false;
 
-void init(){
+/*void init(){
  if (showOnProjector) {
    frame.dispose();  
    frame.setUndecorated(true);
    super.init();
  }
-}
+}*/
 
 // Realtime vars
 Boolean realtimeDetect = true;
@@ -69,7 +69,8 @@ ArrayList<StageElement> stageElements;
 
 void setup() {
 
-  stage = new StageDetector(this, 640, 480, KINECT);
+  stage = new StageDetector(this, 640, 480, CAPTURE);
+  //stage = new StageDetector(this, 640, 480, KINECT);
   //stage = new StageDetector(this, "input/after4.jpg");
   //stage.setSource(CAPTURE);
   stage.setMethod(EDGES);

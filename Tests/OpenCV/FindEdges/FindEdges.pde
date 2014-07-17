@@ -6,11 +6,11 @@ PImage src, processedImage, cannyImage, contoursImage;
 ArrayList<Contour> contours;
 
 void setup() {
-  src = loadImage("after4.jpg");
+  src = loadImage("test.jpg");
   size(src.width, src.height, P2D);
   
   opencv = new OpenCV(this, src);
-  opencv.useColor(HSB);
+  opencv.useColor(HSB); // Change to HSB color space
   opencv.setGray(opencv.getS().clone());
   opencv.threshold(95);
   opencv.erode();
@@ -26,7 +26,7 @@ void setup() {
   
   // Canny Edges
   opencv.loadImage(src);
-  opencv.useColor(RGB);
+  opencv.useColor(RGB); // Change back to RGB color space
   opencv.findCannyEdges(20,75);
   opencv.dilate();
   opencv.erode();
