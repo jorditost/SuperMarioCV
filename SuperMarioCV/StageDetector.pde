@@ -20,7 +20,7 @@ static int CAPTURE              = 2;
 static int KINECT               = 3;
 
 // Detection method
-static int EDGES                = 1;
+static int BLOB_DETECTION       = 1;
 static int IMAGE_DIFF           = 2;
 static int COLOR_FILTER         = 3;
 static int HYBRID               = 4;
@@ -39,7 +39,7 @@ class StageDetector {
   Capture video;
   
   int source = CAPTURE;
-  int method = EDGES;
+  int method = BLOB_DETECTION;
   
   // Public vars
   public int width, height;
@@ -51,7 +51,7 @@ class StageDetector {
   private ArrayList<Contour> contours;
   private ArrayList<StageElement> stageElements;
   
-  private int edgesThreshold     = 95; // 40: Natural light
+  private int threshold          = 95; // 40: Natural light
   private int imageDiffThreshold = 80;
   
   
@@ -125,15 +125,15 @@ class StageDetector {
     method = theMethod;
   }
   
-  void setEdgesThreshold(int value) {
-    edgesThreshold = value;
-    if (method != EDGES) {
+  void setThreshold(int value) {
+    threshold = value;
+    if (method != BLOB_DETECTION) {
       println("You're assigning a threshold for a wrong detection method!");
     }
   }
   
   void setImageDiffThreshold(int value) {
-    edgesThreshold = value;
+    threshold = value;
     if (method != IMAGE_DIFF) {
       println("You're assigning a threshold for a wrong detection method!");
     }  
@@ -194,11 +194,11 @@ class StageDetector {
     updateVideoSource();
     
     // Edge Detection
-    if (method == EDGES || method == HYBRID) {
+    if (method == BLOB_DETECTION || method == HYBRID) {
       
       opencv.useColor(HSB);
       opencv.setGray(opencv.getS().clone());
-      opencv.threshold(edgesThreshold);
+      opencv.threshold(threshold);
       opencv.erode();
       //opencv.invert();
       

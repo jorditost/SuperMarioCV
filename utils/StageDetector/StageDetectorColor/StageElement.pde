@@ -1,10 +1,10 @@
 /**
  * StageElement Class
  * 
- * @Author: Jordi Tost
+ * @Author: Jordi Tost @jorditost
  * @Author URI: jorditost.com
  *
- * Fachhochschule Potsdam Interfacedesign, 2013-2014
+ * University of Applied Sciences Potsdam, 2014
  */
  
 import java.awt.Rectangle;
@@ -20,12 +20,12 @@ class StageElement {
   int type;
   Rectangle rect;
   
-  StageElement() {
+  public StageElement() {
     rect = new Rectangle();
     type = NONE;
   }
   
-  StageElement(Rectangle theRect, int theType) {
+  public StageElement(Rectangle theRect, int theType) {
     rect = theRect;
     type = theType;
   }

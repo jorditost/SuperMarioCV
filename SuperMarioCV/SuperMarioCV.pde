@@ -75,8 +75,8 @@ void setup() {
   //stage = new StageDetector(this, 640, 480, KINECT);
   //stage = new StageDetector(this, "input/after4.jpg");
   //stage.setSource(CAPTURE);
-  stage.setMethod(EDGES);
-  //stage.setEdgesThreshold(70);
+  stage.setMethod(BLOB_DETECTION);
+  //stage.setThreshold(70);
   
   if (stage.source == IMAGE_SRC) {
     screenWidth = 512;
@@ -195,8 +195,8 @@ void keyPressed() {
       
     stage.initBackground();
     
-    // Detect for Edges Detection
-    if (stage.method == EDGES) {
+    // Detect for blob detection
+    if (stage.method == BLOB_DETECTION) {
       detectStage();
       resetGame();
     }
