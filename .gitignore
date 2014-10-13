@@ -1,6 +1,17 @@
+# SuperMarioCV
+
 *.rtf
 *.mov
 _[Dd]ocs/
 _[Ee]ngine/
 _[Tt]ests/
-utils/
+
+# General
+
+.DS_Store
+applet
+application.linux32
+application.linux64
+application.windows32
+application.windows64
+application.macosx
