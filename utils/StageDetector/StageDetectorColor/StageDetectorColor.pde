@@ -12,8 +12,7 @@ static int IMAGE_SRC = 0;
 static int CAPTURE   = 1;
 static int KINECT    = 2;
 
-int source = CAPTURE;
-int method = StageDetector.BLOB_DETECTION; 
+int source = IMAGE_SRC;
 
 Boolean realtimeUpdate = true;
 
@@ -36,12 +35,8 @@ void setup() {
     stage = new StageDetector(this, 640, 480);
   }
   
-  stage.setMethod(method);
-  
   frameRate(30);
   size(stage.width, stage.height);
-  
-  //stageElements = stage.detect();
 }
 
 void draw() {

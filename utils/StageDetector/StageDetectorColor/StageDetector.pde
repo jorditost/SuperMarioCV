@@ -16,13 +16,6 @@ import processing.video.*;
 
 class StageDetector {
   
-  // Detection method
-  public static final int BLOB_DETECTION   = 1;
-  public static final int COLOR_TRACKING   = 3;
-  public static final int HYBRID           = 4;
-  
-  public int method = BLOB_DETECTION;
-  
   PApplet parent;
   
   public int width;
@@ -47,6 +40,8 @@ class StageDetector {
   private int minBlobSize = 20;
   private int maxBlobSize = 200;
   
+  private Boolean useColorTracking;
+  
   // Color tracking params
   private int redH       = 166;  //167;
   private int greenH     = 45;   //37;
@@ -60,11 +55,23 @@ class StageDetector {
   
   public StageDetector(PApplet theParent, int width, int height) {
     parent = theParent;
+    useColorTracking = false;
     init(width, height);
   }
   
   public StageDetector(PApplet theParent, String pathToImg) {
     parent = theParent;
+    useColorTracking = false;
+    loadFromString(pathToImg);
+  }
+  
+  public StageDetector(PApplet theParent, String pathToImg, Boolean useColorTracking) {
+    parent = theParent;
+    this.useColorTracking = useColorTracking;
+    loadFromString(pathToImg);
+  }
+  
+  private void loadFromString(String pathToImg) {
     PImage imageToLoad = parent.loadImage(pathToImg);
     init(imageToLoad.width, imageToLoad.height);
     detect(imageToLoad);
@@ -90,10 +97,6 @@ class StageDetector {
   // Set Methods
   /////////////////
   
-  public void setMethod(int method) {
-    this.method = method;
-  }
-  
   public void setThreshold(int threshold) {
     this.threshold = threshold;
   }
@@ -104,6 +107,14 @@ class StageDetector {
   
   public void setMaxBlobSize(int maxBlobSize) {
     this.maxBlobSize = maxBlobSize;
+  }
+  
+  public void useColorTracking() {
+    useColorTracking = true;
+  }
+  
+  public void useColorTracking(Boolean value) {
+    useColorTracking = value;
   }
   
   
@@ -123,24 +134,22 @@ class StageDetector {
     opencv.loadImage(inputImage);
     
     // Blob (contour) detection
-    if (method == BLOB_DETECTION || method == HYBRID) {
-      
-      opencv.useColor(HSB);
-      opencv.setGray(opencv.getS().clone());
-      opencv.threshold(threshold);
-      opencv.erode();
-      //opencv.invert();
-      
-      outputImage = opencv.getSnapshot();
-      
-      contours = opencv.findContours(true, true);
+    opencv.useColor(HSB);
+    opencv.setGray(opencv.getS().clone());
+    outputImage = opencv.getSnapshot();
+    opencv.threshold(threshold);
+    opencv.erode();
     
-      // Get stage elements from contours
-      stageElements.addAll(getStageElements(contours, NONE));
-    } 
+    //outputImage = opencv.getSnapshot();
+    
+    contours = opencv.findContours(true, true);
+  
+    // Get stage elements from contours
+    stageElements.addAll(getStageElements(contours, NONE));
+     
     
     // Color tracking
-    if (method == COLOR_TRACKING || method == HYBRID) {
+    if (useColorTracking) {
       
       // Get RED Contours
       ArrayList<Contour> redContours = filterContoursByColor(redH);
@@ -158,7 +167,11 @@ class StageDetector {
       ArrayList<StageElement> blueStageElements = getStageElements(blueContours, BLUE);
       
       // Check repeated elements before adding them
-      if (method == HYBRID) {
+      checkAddedElements(redStageElements, RED);
+      checkAddedElements(greenStageElements, GREEN);
+      checkAddedElements(blueStageElements, BLUE);
+      
+      /*if (method == HYBRID) {
         checkAddedElements(redStageElements, RED);
         checkAddedElements(greenStageElements, GREEN);
         checkAddedElements(blueStageElements, BLUE);
@@ -166,7 +179,7 @@ class StageDetector {
         stageElements.addAll(redStageElements);
         stageElements.addAll(greenStageElements);
         stageElements.addAll(blueStageElements);
-      }
+      }*/
     }
     
     //println("Found " + stageElements.size() + " stage elements");
