@@ -1,7 +1,9 @@
 /**
  * SuperMarioCV
  *
- * University of Applied Sciences Potsdam, 2013-2014
+ * @author: Jordi Tost
+ *
+ * University of Applied Sciences Potsdam, 2014
  */
 
 /*
