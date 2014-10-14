@@ -3,6 +3,7 @@ import java.awt.Rectangle;
 import SimpleOpenNI.*;
 import processing.video.*;
 
+PImage image;
 Capture video;
 SimpleOpenNI kinect;
 StageDetector stage;
@@ -18,9 +19,12 @@ Boolean realtimeUpdate = true;
 
 void setup() {
   
+  frameRate(30);
+  
   // IMAGE_SRC
   if (source == IMAGE_SRC) {
-    stage = new StageDetector(this, "after4.jpg");
+    image = loadImage("after4.jpg");
+    stage = new StageDetector(this, image.width, image.height);
   
   // CAPTURE
   } else if (source == CAPTURE) {
@@ -35,20 +39,28 @@ void setup() {
     stage = new StageDetector(this, 640, 480);
   }
   
-  frameRate(30);
+  // Configure detector
+  //stage.setChannel(GRAY);
+  //stage.setContrast(1.5);
+  stage.setThreshold(75);
+  
   size(stage.width, stage.height);
 }
 
 void draw() {
   
-  if (source != IMAGE_SRC && realtimeUpdate) {
+  if (realtimeUpdate) {
+    
+    // IMAGE
+    if (source == IMAGE_SRC) {
+      stage.detect(image);
     
     // CAPTURE
-    if (source == CAPTURE && video != null) {
+    } else if (source == CAPTURE && video != null) {
       if (video.available()) {
         video.read();
-        stage.detect(video);
       }
+      stage.detect(video);
     
     // KINECT
     } else if (source == KINECT && kinect != null) {

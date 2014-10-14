@@ -14,6 +14,11 @@ import SimpleOpenNI.*;
 import java.awt.Rectangle;
 import processing.video.*;
 
+// declare like:
+// enum TrackingColorMode {TRACK_COLOR_RGB, TRACK_COLOR_HSV, TRACK_COLOR_H, TRACK_COLOR_HS};
+public static final int GRAY = 0;  // More stable with video source
+public static final int S    = 1;
+
 class StageDetector {
   
   PApplet parent;
@@ -30,17 +35,18 @@ class StageDetector {
   private ArrayList<StageElement> stageElements;
   
   // Detection params
-  //private float contrast = 1.35;
-  //private int brightness = 0;
+  private int channel = S;
+  private float contrast = 1;
+  private int brightness = 0;
   private int threshold = 75; // 40: Natural light
-  //private boolean useAdaptiveThreshold = false; // use basic thresholding
-  //private int thresholdBlockSize = 489;
-  //private int thresholdConstant = 45;
-  //private int blurSize = 4;
+  private boolean useAdaptiveThreshold = false; // use basic thresholding
+  private int thresholdBlockSize = 489;
+  private int thresholdConstant = 45;
+  private int blurSize = 1;
   private int minBlobSize = 20;
-  private int maxBlobSize = 200;
+  private int maxBlobSize = 400;
   
-  private Boolean useColorTracking;
+  private boolean useColorTracking;
   
   // Color tracking params
   private int redH       = 166;  //167;
@@ -65,7 +71,7 @@ class StageDetector {
     loadFromString(pathToImg);
   }
   
-  public StageDetector(PApplet theParent, String pathToImg, Boolean useColorTracking) {
+  public StageDetector(PApplet theParent, String pathToImg, boolean useColorTracking) {
     parent = theParent;
     this.useColorTracking = useColorTracking;
     loadFromString(pathToImg);
@@ -88,8 +94,8 @@ class StageDetector {
     contours = new ArrayList<Contour>();
     stageElements = new ArrayList<StageElement>();
     
-    inputImage  = new PImage(width, height);
-    outputImage = new PImage(width, height);
+    //inputImage  = new PImage(width, height);
+    //outputImage = new PImage(width, height);
   }
   
   
@@ -97,8 +103,32 @@ class StageDetector {
   // Set Methods
   /////////////////
   
+  public void setChannel(int channel) {
+    this.channel = channel;
+  }
+  
+  public void setContrast(float contrast) {
+    this.contrast = contrast;
+  }
+  
   public void setThreshold(int threshold) {
     this.threshold = threshold;
+  }
+  
+  public void setUseAdaptiveThreshold(boolean flag) {
+    this.useAdaptiveThreshold = flag;
+  }
+  
+  public void setThresholdBlockSize(int value) {
+    this.thresholdBlockSize = value;
+  }
+  
+  public void setThresholdConstant(int value) {
+    this.thresholdConstant = value;
+  }
+  
+  public void setBlurSize(int blurSize) {
+    this.blurSize = blurSize;
   }
   
   public void setMinBlobSize(int minBlobSize) {
@@ -113,7 +143,7 @@ class StageDetector {
     useColorTracking = true;
   }
   
-  public void useColorTracking(Boolean value) {
+  public void useColorTracking(boolean value) {
     useColorTracking = value;
   }
   
@@ -129,18 +159,71 @@ class StageDetector {
     contours.clear();
     stageElements.clear();
     
-    // Update input image
+    // Load new image into OpenCV
     inputImage = img;
     opencv.loadImage(inputImage);
     
     // Blob (contour) detection
-    opencv.useColor(HSB);
+    /*opencv.useColor(HSB);
     opencv.setGray(opencv.getS().clone());
-    outputImage = opencv.getSnapshot();
     opencv.threshold(threshold);
+    opencv.erode();*/
+    
+    ///////////////////////////////
+    // <1> PRE-PROCESS IMAGE
+    // - Detection channel 
+    // - Brightness / Contrast
+    ///////////////////////////////
+    
+    // Detection channel
+    if (channel == S) {
+      opencv.useColor(HSB);
+      opencv.setGray(opencv.getS().clone());
+    } else {
+      opencv.gray();
+    }
+    
+    //opencv.brightness(brightness);
+    opencv.contrast(contrast);
+    
+    ///////////////////////////////
+    // <2> PROCESS IMAGE
+    // - Threshold
+    // - Noise Supression
+    ///////////////////////////////
+      
+    // Adaptive threshold - Good when non-uniform illumination
+    if (useAdaptiveThreshold) {
+      
+      // Block size must be odd and greater than 3
+      if (thresholdBlockSize%2 == 0) thresholdBlockSize++;
+      if (thresholdBlockSize < 3) thresholdBlockSize = 3;
+      
+      opencv.adaptiveThreshold(thresholdBlockSize, thresholdConstant);
+      
+    // Basic threshold - range [0, 255]
+    } else {
+      opencv.threshold(threshold);
+    }
+  
+    // Invert (black bg, white blobs)
+    if (channel == GRAY) {
+      opencv.invert();
+    }
+    
+    // Reduce noise - Dilate and erode to close holes
+    //opencv.dilate();
     opencv.erode();
     
-    //outputImage = opencv.getSnapshot();
+    // Blur
+    //opencv.blur(blurSize);
+    
+    // Save snapshot for display
+    outputImage = opencv.getSnapshot();
+    
+    ///////////////////////////////
+    // <3> FIND CONTOURS  
+    ///////////////////////////////
     
     contours = opencv.findContours(true, true);
   
@@ -187,7 +270,7 @@ class StageDetector {
     return stageElements;
   }
   
-  private void checkAddedElements(ArrayList<StageElement> newStageElements, int type) {
+  private void checkAddedElements(ArrayList<StageElement> newStageElements, int colorId) {
     
     for (StageElement newStageElement : newStageElements) {
       
@@ -197,7 +280,7 @@ class StageDetector {
         
         // Check if they are the same
         if (stageElementsAreTheSame(stageElement, newStageElement)) {
-          stageElement.type = type;
+          stageElement.colorId = colorId;
           isAdded = true;
           break;
         }
@@ -235,7 +318,7 @@ class StageDetector {
   
   // Function that filters stage elements from a given countours array
   // Returns cloned array for perform manipulation outside
-  private ArrayList<StageElement> getStageElements(ArrayList<Contour> contoursArray, int type) {
+  private ArrayList<StageElement> getStageElements(ArrayList<Contour> contoursArray, int colorId) {
     
     ArrayList<StageElement> tempStageElements = new ArrayList<StageElement>();
     
@@ -248,7 +331,7 @@ class StageDetector {
           (r.width < minBlobSize && r.height < minBlobSize))
         continue;
       
-      StageElement stageElement = new StageElement(r, type);
+      StageElement stageElement = new StageElement(r, colorId);
       tempStageElements.add(stageElement);
     }
     
@@ -266,31 +349,8 @@ class StageDetector {
   
   public void displayStageElements() {
     
-    if (contours.size() == 0)
-      return;
-    
-    noFill();
-    strokeWeight(3);
-    
-    // Detected stage elements
-    for (StageElement stageElement : stageElements) {  
-      
-      if (stageElement.type == RED) {
-        stroke(255, 0, 0);
-        fill(255, 0, 0, 150);
-      } else if (stageElement.type == GREEN) {
-        stroke(0, 255, 0);
-        fill(0, 255, 0, 100);
-      } else if (stageElement.type == BLUE) {
-        stroke(0, 0, 255);
-        fill(0, 0, 255, 100);
-      } else {
-        stroke(0);
-        fill(0, 60);
-      }
-        
-      strokeWeight(2);
-      rect(stageElement.rect.x, stageElement.rect.y, stageElement.rect.width, stageElement.rect.height);
+    for (StageElement stageElement : stageElements) {
+      stageElement.display();
     }
   }
   

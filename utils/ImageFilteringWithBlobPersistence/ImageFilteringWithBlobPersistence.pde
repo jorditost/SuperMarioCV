@@ -17,10 +17,16 @@
 import gab.opencv.*;
 import java.awt.Rectangle;
 import processing.video.*;
+import SimpleOpenNI.*;
 import controlP5.*;
+
+
+public static final int GRAY = 0;
+public static final int S    = 1;
 
 OpenCV opencv;
 Capture video;
+SimpleOpenNI kinect;
 PImage src, preProcessedImage, processedImage, contoursImage;
 
 ArrayList<Contour> contours;
@@ -31,32 +37,53 @@ ArrayList<Contour> newBlobContours;
 // List of my blob objects (persistent)
 ArrayList<Blob> blobList;
 
-
 // Number of blobs detected over all time. Used to set IDs.
 int blobCount = 0;
 
-float contrast = 1.35;
+// Detection params
+int channel = S;
+float contrast = 1;
 int brightness = 0;
 int threshold = 75;
 boolean useAdaptiveThreshold = false; // use basic thresholding
 int thresholdBlockSize = 489;
 int thresholdConstant = 45;
+int blurSize = 1;
 int minBlobSize = 20;
-int blurSize = 4;
+int maxBlobSize = 400;
 
 // Control vars
 ControlP5 cp5;
 int buttonColor;
 int buttonBgColor;
 
+static int IMAGE_SRC = 0;
+static int CAPTURE   = 1;
+static int KINECT    = 2;
+
+int source = CAPTURE;
+
 void setup() {
   frameRate(15);
   
-  video = new Capture(this, 640, 480);
-  //video = new Capture(this, 640, 480, "USB2.0 PC CAMERA");
-  video.start();
+  // IMAGE_SRC
+  if (source == IMAGE_SRC) {
+    src = loadImage("data/after4.jpg");
+    opencv = new OpenCV(this, src);
+    
+  // CAPTURE
+  } else if (source == CAPTURE) {
+    video = new Capture(this, 640, 480);
+    video.start();
+    opencv = new OpenCV(this, video.width, video.height);
   
-  opencv = new OpenCV(this, 640, 480);
+  // KINECT
+  } else if (source == KINECT) {
+    kinect = new SimpleOpenNI(this);
+    kinect.enableRGB();
+    opencv = new OpenCV(this, 640, 480);
+  }
+  
   contours = new ArrayList<Contour>();
   
   // Blobs list
@@ -74,73 +101,31 @@ void setup() {
 
 void draw() {
   
-  // Read last captured frame
-  if (video.available()) {
-    video.read();
+  // IMAGE
+  if (source == IMAGE_SRC) {
+    
+    opencv.loadImage(src);
+  
+  // CAPTURE
+  } else if (source == CAPTURE && video != null) {
+    if (video.available()) {
+      video.read();
+    }
+    
+    // Load the new frame of our camera in to OpenCV
+    opencv.loadImage(video);
+    src = opencv.getSnapshot();
+  
+  // KINECT
+  } else if (source == KINECT && kinect != null) {
+    kinect.update();
+    
+    // Load the new frame of our camera in to OpenCV
+    opencv.loadImage(kinect.rgbImage());
+    src = opencv.getSnapshot();
   }
   
-  // Load the new frame of our camera in to OpenCV
-  opencv.loadImage(video);
-  src = opencv.getSnapshot();
-  
-  ///////////////////////////////
-  // <1> PRE-PROCESS IMAGE
-  // - Grey channel 
-  // - Brightness / Contrast
-  ///////////////////////////////
-  
-  // Gray channel
-  opencv.gray();
-  
-  //opencv.brightness(brightness);
-  opencv.contrast(contrast);
-  
-  // Save snapshot for display
-  preProcessedImage = opencv.getSnapshot();
-  
-  ///////////////////////////////
-  // <2> PROCESS IMAGE
-  // - Threshold
-  // - Noise Supression
-  ///////////////////////////////
-  
-  // Adaptive threshold - Good when non-uniform illumination
-  if (useAdaptiveThreshold) {
-    
-    // Block size must be odd and greater than 3
-    if (thresholdBlockSize%2 == 0) thresholdBlockSize++;
-    if (thresholdBlockSize < 3) thresholdBlockSize = 3;
-    
-    opencv.adaptiveThreshold(thresholdBlockSize, thresholdConstant);
-    
-  // Basic threshold - range [0, 255]
-  } else {
-    opencv.threshold(threshold);
-  }
-
-  // Invert (black bg, white blobs)
-  opencv.invert();
-  
-  // Reduce noise - Dilate and erode to close holes
-  opencv.dilate();
-  opencv.erode();
-  
-  // Blur
-  opencv.blur(blurSize);
-  
-  // Save snapshot for display
-  processedImage = opencv.getSnapshot();
-  
-  ///////////////////////////////
-  // <3> FIND CONTOURS  
-  ///////////////////////////////
-  
-  detectBlobs();
-  // Passing 'true' sorts them by descending area.
-  //contours = opencv.findContours(true, true);
-  
-  // Save snapshot for display
-  contoursImage = opencv.getSnapshot();
+  detect();
   
   // Draw
   pushMatrix();
@@ -168,72 +153,78 @@ void draw() {
   popMatrix();
 }
 
-///////////////////////
-// Display Functions
-///////////////////////
-
-void displayImages() {
-  
-  pushMatrix();
-  scale(0.5);
-  image(src, 0, 0);
-  image(preProcessedImage, src.width, 0);
-  image(processedImage, 0, src.height);
-  image(src, src.width, src.height);
-  popMatrix();
-  
-  stroke(255);
-  fill(255);
-  textSize(12);
-  text("Source", 10, 25); 
-  text("Pre-processed Image", src.width/2 + 10, 25); 
-  text("Processed Image", 10, src.height/2 + 25); 
-  text("Tracked Points", src.width/2 + 10, src.height/2 + 25);
-}
-
-void displayBlobs() {
-  
-  for (Blob b : blobList) {
-    strokeWeight(1);
-    b.display();
-  }
-}
-
-void displayContours() {
-  
-  // Contours
-  for (int i=0; i<contours.size(); i++) {
-  
-    Contour contour = contours.get(i);
-    
-    noFill();
-    stroke(0, 255, 0);
-    strokeWeight(3);
-    contour.draw();
-  }
-}
-
-void displayContoursBoundingBoxes() {
-  
-  for (int i=0; i<contours.size(); i++) {
-    
-    Contour contour = contours.get(i);
-    Rectangle r = contour.getBoundingBox();
-    
-    if (//(contour.area() > 0.9 * src.width * src.height) ||
-        (r.width < minBlobSize || r.height < minBlobSize))
-      continue;
-    
-    stroke(255, 0, 0);
-    fill(255, 0, 0, 150);
-    strokeWeight(2);
-    rect(r.x, r.y, r.width, r.height);
-  }
-}
-
 ////////////////////
 // Blob Detection
 ////////////////////
+
+void detect() {
+  
+  ///////////////////////////////
+  // <1> PRE-PROCESS IMAGE
+  // - Detection channel 
+  // - Brightness / Contrast
+  ///////////////////////////////
+  
+  // Detection channel
+  if (channel == S) {
+    opencv.useColor(HSB);
+    opencv.setGray(opencv.getS().clone());
+  } else {
+    opencv.gray();
+  }
+  
+  //opencv.brightness(brightness);
+  opencv.contrast(contrast);
+  
+  // Save snapshot for display
+  preProcessedImage = opencv.getSnapshot();
+  
+  ///////////////////////////////
+  // <2> PROCESS IMAGE
+  // - Threshold
+  // - Noise Supression
+  ///////////////////////////////
+    
+  // Adaptive threshold - Good when non-uniform illumination
+  if (useAdaptiveThreshold) {
+    
+    // Block size must be odd and greater than 3
+    if (thresholdBlockSize%2 == 0) thresholdBlockSize++;
+    if (thresholdBlockSize < 3) thresholdBlockSize = 3;
+    
+    opencv.adaptiveThreshold(thresholdBlockSize, thresholdConstant);
+    
+  // Basic threshold - range [0, 255]
+  } else {
+    opencv.threshold(threshold);
+  }
+
+  // Invert (black bg, white blobs)
+  if (channel == GRAY) {
+    opencv.invert();
+  }
+  
+  // Reduce noise - Dilate and erode to close holes
+  //opencv.dilate();
+  opencv.erode();
+  
+  // Blur
+  opencv.blur(blurSize);
+  
+  // Save snapshot for display
+  processedImage = opencv.getSnapshot();
+  
+  ///////////////////////////////
+  // <3> FIND CONTOURS  
+  ///////////////////////////////
+  
+  detectBlobs();
+  // Passing 'true' sorts them by descending area.
+  //contours = opencv.findContours(true, true);
+  
+  // Save snapshot for display
+  contoursImage = opencv.getSnapshot();
+}
 
 void detectBlobs() {
   
@@ -346,8 +337,9 @@ ArrayList<Contour> getBlobsFromContours(ArrayList<Contour> newContours) {
     Contour contour = newContours.get(i);
     Rectangle r = contour.getBoundingBox();
     
-    if (//(contour.area() > 0.9 * src.width * src.height) ||
-        (r.width < minBlobSize || r.height < minBlobSize))
+    if (//(r.width < minBlobSize || r.height < minBlobSize))
+      (r.width > maxBlobSize || r.height > maxBlobSize) ||
+      (r.width < minBlobSize && r.height < minBlobSize))
       continue;
     
     newBlobs.add(contour);
@@ -356,22 +348,98 @@ ArrayList<Contour> getBlobsFromContours(ArrayList<Contour> newContours) {
   return newBlobs;
 }
 
+///////////////////////
+// Display Functions
+///////////////////////
+
+void displayImages() {
+  
+  pushMatrix();
+  scale(0.5);
+  image(src, 0, 0);
+  image(preProcessedImage, src.width, 0);
+  image(processedImage, 0, src.height);
+  image(src, src.width, src.height);
+  popMatrix();
+  
+  stroke(255);
+  fill(255);
+  textSize(12);
+  text("Source", 10, 25); 
+  text("Pre-processed Image", src.width/2 + 10, 25); 
+  text("Processed Image", 10, src.height/2 + 25); 
+  text("Tracked Points", src.width/2 + 10, src.height/2 + 25);
+}
+
+void displayBlobs() {
+  
+  for (Blob b : blobList) {
+    strokeWeight(1);
+    b.display();
+  }
+}
+
+void displayContours() {
+  
+  // Contours
+  for (int i=0; i<contours.size(); i++) {
+  
+    Contour contour = contours.get(i);
+    
+    noFill();
+    stroke(0, 255, 0);
+    strokeWeight(3);
+    contour.draw();
+  }
+}
+
+void displayContoursBoundingBoxes() {
+  
+  for (int i=0; i<contours.size(); i++) {
+    
+    Contour contour = contours.get(i);
+    Rectangle r = contour.getBoundingBox();
+    
+    if (//(r.width < minBlobSize || r.height < minBlobSize))
+        (r.width > maxBlobSize || r.height > maxBlobSize) ||
+        (r.width < minBlobSize && r.height < minBlobSize))
+      continue;
+    
+    stroke(255, 0, 0);
+    fill(255, 0, 0, 150);
+    strokeWeight(2);
+    rect(r.x, r.y, r.width, r.height);
+  }
+}
+
 //////////////////////////
 // CONTROL P5 Functions
 //////////////////////////
 
 void initControls() {
+  
+  // Set radio for channel
+  cp5.addRadioButton("changeChannel")
+     .setPosition(20,50)
+     .setSize(10,10)
+     .setItemsPerRow(2)
+     .setSpacingColumn(50)
+     .addItem("GRAY", GRAY)
+     .addItem("SATURATION", S)
+     .activate(S)
+     ;
+  
   // Slider for contrast
   cp5.addSlider("contrast")
      .setLabel("contrast")
-     .setPosition(20,50)
+     .setPosition(20,110)
      .setRange(0.0,6.0)
      ;
      
   // Slider for threshold
   cp5.addSlider("threshold")
      .setLabel("threshold")
-     .setPosition(20,110)
+     .setPosition(20,170)
      .setRange(0,255)
      ;
   
@@ -379,40 +447,51 @@ void initControls() {
   cp5.addToggle("toggleAdaptiveThreshold")
      .setLabel("use adaptive threshold")
      .setSize(10,10)
-     .setPosition(20,144)
+     .setPosition(20,204)
      ;
      
   // Slider for adaptive threshold block size
   cp5.addSlider("thresholdBlockSize")
      .setLabel("a.t. block size")
-     .setPosition(20,180)
+     .setPosition(20,240)
      .setRange(1,700)
      ;
      
   // Slider for adaptive threshold constant
   cp5.addSlider("thresholdConstant")
      .setLabel("a.t. constant")
-     .setPosition(20,200)
+     .setPosition(20,260)
      .setRange(-100,100)
      ;
   
   // Slider for blur size
   cp5.addSlider("blurSize")
      .setLabel("blur size")
-     .setPosition(20,260)
+     .setPosition(20,320)
      .setRange(1,20)
      ;
      
-  // Slider for minimum blob size
+  // Slider for minimal blob size
   cp5.addSlider("minBlobSize")
      .setLabel("min blob size")
-     .setPosition(20,290)
+     .setPosition(20,380)
      .setRange(0,60)
+     ;
+     
+  // Slider for maximal blob size
+  cp5.addSlider("maxBlobSize")
+     .setLabel("max blob size")
+     .setPosition(20,400)
+     .setRange(100,800)
      ;
      
   // Store the default background color, we gonna need it later
   buttonColor = cp5.getController("contrast").getColor().getForeground();
   buttonBgColor = cp5.getController("contrast").getColor().getBackground();
+}
+
+void changeChannel(int c) {
+  channel = (c >= 0) ? c : S; 
 }
 
 void toggleAdaptiveThreshold(boolean theFlag) {
