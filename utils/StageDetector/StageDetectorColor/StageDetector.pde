@@ -41,9 +41,13 @@ class StageDetector {
   private int brightness = 0;
   private int threshold = 75; // 40: Natural light
   private boolean useAdaptiveThreshold = false; // use basic thresholding
-  private int thresholdBlockSize = 489;
-  private int thresholdConstant = 45;
+  private int thresholdBlockSize = 500; //489;
+  private int thresholdConstant = -20; //45;
+  private boolean dilate = false;
+  private boolean erode = true;
   private int blurSize = 1;
+  private boolean useThresholdAfterBlur = false;
+  private int thresholdAfterBlur = 75;
   private int minBlobSize = 20;
   private int maxBlobSize = 400;
   
@@ -107,19 +111,22 @@ class StageDetector {
     println(" ");
     println("StageDetector " + version);
     println("========================");
-    println("- Channel:             " + ((channel == S) ? "Saturation" : "Gray"));
-    println("- Contrast:            " + contrast);
-    //println("- Brightness:          " + brightness);
+    println("- Channel:                 " + ((channel == S) ? "Saturation" : "Gray"));
+    println("- Contrast:                " + contrast);
+    //println("- Brightness:            " + brightness);
     if (useAdaptiveThreshold) {
       println("- Adaptive Threshold");
-      println("    Block Size:        " + thresholdBlockSize);
-      println("    Constant:          " + thresholdConstant);
+      println("    Block Size:            " + thresholdBlockSize);
+      println("    Constant:              " + thresholdConstant);
     } else {
-      println("- Threshold:           " + threshold);
+      println("- Threshold:               " + threshold);
     }
-    println("- Blur Size:           " + blurSize);
-    println("- Min. Blob Size:      " + minBlobSize);
-    println("- Max. Blob Size:      " + maxBlobSize);
+    println("- Blur Size:               " + blurSize);
+    if (useThresholdAfterBlur) {
+      println("- Threshold (after blur):  " + thresholdAfterBlur);
+    }
+    println("- Min. Blob Size:          " + minBlobSize);
+    println("- Max. Blob Size:          " + maxBlobSize);
     println(" ");
   }
   
@@ -139,7 +146,7 @@ class StageDetector {
     this.threshold = threshold;
   }
   
-  public void setAdaptiveThreshold(boolean flag) {
+  public void setUseAdaptiveThreshold(boolean flag) {
     this.useAdaptiveThreshold = flag;
   }
   
@@ -151,8 +158,24 @@ class StageDetector {
     this.thresholdConstant = value;
   }
   
+  public void setDilate(boolean flag) {
+    this.dilate = flag;
+  }
+  
+  public void setErode(boolean flag) {
+    this.erode = flag;
+  }
+  
   public void setBlurSize(int blurSize) {
     this.blurSize = blurSize;
+  }
+  
+  public void setUseThresholdAfterBlur(boolean flag) {
+    this.useThresholdAfterBlur = flag;
+  }
+  
+  public void setThresholdAfterBlur(int value) {
+    this.thresholdAfterBlur = value;
   }
   
   public void setMinBlobSize(int minBlobSize) {
@@ -207,8 +230,11 @@ class StageDetector {
       opencv.gray();
     }
     
+    // Contrast
     //opencv.brightness(brightness);
-    opencv.contrast(contrast);
+    if (contrast > 1) {
+      opencv.contrast(contrast);
+    }
     
     ///////////////////////////////
     // <2> PROCESS IMAGE
@@ -236,11 +262,18 @@ class StageDetector {
     }
     
     // Reduce noise - Dilate and erode to close holes
-    //opencv.dilate();
-    opencv.erode();
+    // Reduce noise - Dilate and erode to close holes
+    if (dilate) opencv.dilate();
+    if (erode)  opencv.erode();
     
     // Blur
-    //opencv.blur(blurSize);
+    if (blurSize > 1) {
+      opencv.blur(blurSize);
+    }
+    
+    if (useThresholdAfterBlur) {
+      opencv.threshold(thresholdAfterBlur);
+    }
     
     // Save snapshot for display
     outputImage = opencv.getSnapshot();

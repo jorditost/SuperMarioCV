@@ -51,12 +51,13 @@ float contrast = 1;
 int brightness = 0;
 int threshold = 75;
 boolean useAdaptiveThreshold = false; // use basic thresholding
-int thresholdBlockSize = 489;
-int thresholdConstant = 45;
+int thresholdBlockSize = 500; //489;
+int thresholdConstant = -20; //45;
 boolean dilate = false;
 boolean erode = true;
 int blurSize = 1;
-//int afterBlurThreshold = 75;
+boolean useThresholdAfterBlur = false;
+int thresholdAfterBlur = 75;
 int minBlobSize = 20;
 int maxBlobSize = 400;
 
@@ -99,6 +100,7 @@ void setup() {
   
   // Set thresholding
   toggleAdaptiveThreshold(useAdaptiveThreshold);
+  toggleThresholdAfterBlur(useThresholdAfterBlur);
 }
 
 void draw() {
@@ -176,7 +178,9 @@ void detect() {
   }
   
   //opencv.brightness(brightness);
-  opencv.contrast(contrast);
+  if (contrast > 1) {
+    opencv.contrast(contrast);
+  }
   
   // Save snapshot for display
   preProcessedImage = opencv.getSnapshot();
@@ -211,8 +215,13 @@ void detect() {
   if (erode)  opencv.erode();
   
   // Blur
-  opencv.blur(blurSize);
-  //opencv.threshold(afterBlurThreshold);
+  if (blurSize > 1) {
+    opencv.blur(blurSize);
+  }
+  
+  if (useThresholdAfterBlur) {
+    opencv.threshold(thresholdAfterBlur);
+  }
   
   // Save snapshot for display
   processedImage = opencv.getSnapshot();
@@ -246,7 +255,7 @@ void detectBlobs() {
   if (blobList.isEmpty()) {
     // Just make a Blob object for every face Rectangle
     for (int i = 0; i < newBlobContours.size(); i++) {
-      println("+++ New blob detected with ID: " + blobCount);
+      //println("+++ New blob detected with ID: " + blobCount);
       blobList.add(new Blob(this, blobCount, newBlobContours.get(i)));
       blobCount++;
     }
@@ -276,7 +285,7 @@ void detectBlobs() {
     // Add any unused blobs
     for (int i = 0; i < newBlobContours.size(); i++) {
       if (!used[i]) {
-        println("+++ New blob detected with ID: " + blobCount);
+        //println("+++ New blob detected with ID: " + blobCount);
         blobList.add(new Blob(this, blobCount, newBlobContours.get(i)));
         //blobList.add(new Blob(blobCount, blobs[i].x, blobs[i].y, blobs[i].width, blobs[i].height));
         blobCount++;
@@ -421,7 +430,7 @@ void initControls() {
   
   // Set radio for channel
   cp5.addRadioButton("changeChannel")
-     .setPosition(20,50)
+     .setPosition(20,35)
      .setSize(10,10)
      .setItemsPerRow(2)
      .setSpacingColumn(50)
@@ -433,56 +442,94 @@ void initControls() {
   // Slider for contrast
   cp5.addSlider("contrast")
      .setLabel("contrast")
-     .setPosition(20,110)
+     .setPosition(20,90)
      .setRange(0.0,6.0)
      ;
      
   // Slider for threshold
   cp5.addSlider("threshold")
      .setLabel("threshold")
-     .setPosition(20,170)
+     .setPosition(20,140)
      .setRange(0,255)
      ;
   
   // Toggle to activae adaptive threshold
+  /*cp5.addCheckBox("checkAdaptiveThreshold")
+     .setSize(10,10)
+     .setPosition(20,204)
+     .setItemsPerRow(2)
+     .setSpacingColumn(50)
+     .addItem("useAdaptiveThreshold", 0)
+     ;*/
   cp5.addToggle("toggleAdaptiveThreshold")
      .setLabel("use adaptive threshold")
      .setSize(10,10)
-     .setPosition(20,204)
+     .setPosition(20,164)
      ;
      
   // Slider for adaptive threshold block size
   cp5.addSlider("thresholdBlockSize")
      .setLabel("a.t. block size")
-     .setPosition(20,240)
+     .setPosition(20,200)
      .setRange(1,700)
      ;
      
   // Slider for adaptive threshold constant
   cp5.addSlider("thresholdConstant")
      .setLabel("a.t. constant")
-     .setPosition(20,260)
+     .setPosition(20,220)
      .setRange(-100,100)
      ;
   
+  // Dilate / Erode selection
+  cp5.addCheckBox("toggleDilateErode")
+     .setSize(10,10)
+     .setPosition(20,270)
+     .setItemsPerRow(2)
+     .setSpacingColumn(50)
+     .addItem("dilate", 0)
+     .addItem("erode", 1)
+     ;
+     
   // Slider for blur size
   cp5.addSlider("blurSize")
      .setLabel("blur size")
-     .setPosition(20,320)
+     .setPosition(20,290)
      .setRange(1,20)
+     ;
+     
+  // Threshold after blur
+  /*cp5.addCheckBox("checkThresholdAfterBlur")
+     .setSize(10,10)
+     .setPosition(20,340)
+     .setItemsPerRow(2)
+     .setSpacingColumn(50)
+     .addItem("useThresholdAfterBlur", 0)
+     ;*/
+  cp5.addToggle("toggleThresholdAfterBlur")
+     .setLabel("use threshold after blur")
+     .setSize(10,10)
+     .setPosition(20,314)
+     ;
+     
+  // Slider for threshold after blur
+  cp5.addSlider("thresholdAfterBlur")
+     .setLabel("threshold")
+     .setPosition(20,350)
+     .setRange(0,255)
      ;
      
   // Slider for minimal blob size
   cp5.addSlider("minBlobSize")
      .setLabel("min blob size")
-     .setPosition(20,380)
+     .setPosition(20,400)
      .setRange(0,60)
      ;
      
   // Slider for maximal blob size
   cp5.addSlider("maxBlobSize")
      .setLabel("max blob size")
-     .setPosition(20,400)
+     .setPosition(20,420)
      .setRange(100,800)
      ;
      
@@ -493,6 +540,24 @@ void initControls() {
 
 void changeChannel(int c) {
   channel = (c >= 0) ? c : S; 
+}
+
+void toggleDilateErode(float[] a) {
+  dilate = (a[0] == 1);
+  erode  = (a[1] == 1);
+  
+  println("dilate: " + dilate);
+  println("erode: " + erode);
+}
+
+void toggleThresholdAfterBlur(boolean theFlag) {
+  useThresholdAfterBlur = theFlag;
+  
+  if (useThresholdAfterBlur) {
+    setLock(cp5.getController("thresholdAfterBlur"), false);
+  } else {
+    setLock(cp5.getController("thresholdAfterBlur"), true);
+  }
 }
 
 void toggleAdaptiveThreshold(boolean theFlag) {
