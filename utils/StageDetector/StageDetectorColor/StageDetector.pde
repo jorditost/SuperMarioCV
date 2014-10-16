@@ -14,6 +14,7 @@ import SimpleOpenNI.*;
 import java.awt.Rectangle;
 import processing.video.*;
 
+public static String version = "v0.2-beta";
 // declare like:
 // enum TrackingColorMode {TRACK_COLOR_RGB, TRACK_COLOR_HSV, TRACK_COLOR_H, TRACK_COLOR_HS};
 public static final int GRAY = 0;  // More stable with video source
@@ -98,6 +99,29 @@ class StageDetector {
     //outputImage = new PImage(width, height);
   }
   
+  ////////////////
+  // Print Info
+  ////////////////
+  
+  public void listFilterValues() {
+    println(" ");
+    println("StageDetector " + version);
+    println("========================");
+    println("- Channel:             " + ((channel == S) ? "Saturation" : "Gray"));
+    println("- Contrast:            " + contrast);
+    //println("- Brightness:          " + brightness);
+    if (useAdaptiveThreshold) {
+      println("- Adaptive Threshold");
+      println("    Block Size:        " + thresholdBlockSize);
+      println("    Constant:          " + thresholdConstant);
+    } else {
+      println("- Threshold:           " + threshold);
+    }
+    println("- Blur Size:           " + blurSize);
+    println("- Min. Blob Size:      " + minBlobSize);
+    println("- Max. Blob Size:      " + maxBlobSize);
+    println(" ");
+  }
   
   /////////////////
   // Set Methods
@@ -115,7 +139,7 @@ class StageDetector {
     this.threshold = threshold;
   }
   
-  public void setUseAdaptiveThreshold(boolean flag) {
+  public void setAdaptiveThreshold(boolean flag) {
     this.useAdaptiveThreshold = flag;
   }
   

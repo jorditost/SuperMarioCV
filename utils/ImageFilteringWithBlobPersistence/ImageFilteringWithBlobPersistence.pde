@@ -20,6 +20,11 @@ import processing.video.*;
 import SimpleOpenNI.*;
 import controlP5.*;
 
+// Image source
+static int IMAGE_SRC = 0;
+static int CAPTURE   = 1;
+static int KINECT    = 2;
+int source = KINECT;
 
 public static final int GRAY = 0;
 public static final int S    = 1;
@@ -48,7 +53,10 @@ int threshold = 75;
 boolean useAdaptiveThreshold = false; // use basic thresholding
 int thresholdBlockSize = 489;
 int thresholdConstant = 45;
+boolean dilate = false;
+boolean erode = true;
 int blurSize = 1;
+//int afterBlurThreshold = 75;
 int minBlobSize = 20;
 int maxBlobSize = 400;
 
@@ -56,12 +64,6 @@ int maxBlobSize = 400;
 ControlP5 cp5;
 int buttonColor;
 int buttonBgColor;
-
-static int IMAGE_SRC = 0;
-static int CAPTURE   = 1;
-static int KINECT    = 2;
-
-int source = CAPTURE;
 
 void setup() {
   frameRate(15);
@@ -89,7 +91,7 @@ void setup() {
   // Blobs list
   blobList = new ArrayList<Blob>();
   
-  size(opencv.width + 200, opencv.height, P2D);
+  size(opencv.width + 200, opencv.height);
   
   // Init Controls
   cp5 = new ControlP5(this);
@@ -205,11 +207,12 @@ void detect() {
   }
   
   // Reduce noise - Dilate and erode to close holes
-  //opencv.dilate();
-  opencv.erode();
+  if (dilate) opencv.dilate();
+  if (erode)  opencv.erode();
   
   // Blur
   opencv.blur(blurSize);
+  //opencv.threshold(afterBlurThreshold);
   
   // Save snapshot for display
   processedImage = opencv.getSnapshot();
@@ -331,15 +334,13 @@ ArrayList<Contour> getBlobsFromContours(ArrayList<Contour> newContours) {
   
   ArrayList<Contour> newBlobs = new ArrayList<Contour>();
   
-  // Which of these contours are blobs?
-  for (int i=0; i<newContours.size(); i++) {
-    
-    Contour contour = newContours.get(i);
+  for (Contour contour : newContours) {
+      
     Rectangle r = contour.getBoundingBox();
     
-    if (//(r.width < minBlobSize || r.height < minBlobSize))
-      (r.width > maxBlobSize || r.height > maxBlobSize) ||
-      (r.width < minBlobSize && r.height < minBlobSize))
+    if (//(float(r.width)/float(displayWidth) > 0.3 || float(r.height)/float(displayWidth) > 0.3) ||
+        (r.width > maxBlobSize || r.height > maxBlobSize) ||
+        (r.width < minBlobSize && r.height < minBlobSize))
       continue;
     
     newBlobs.add(contour);

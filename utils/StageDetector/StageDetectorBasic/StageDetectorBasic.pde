@@ -1,3 +1,16 @@
+/**
+ * StageDetectorBasic
+ * 
+ * @Author: Jordi Tost @jorditost
+ * @Author URI: jorditost.com
+ *
+ * NOTE
+ * This StageDetector version is deprecated
+ * Check StageDetectorColor and its StageDetector for the last version
+ *
+ * University of Applied Sciences Potsdam, 2014
+ */
+
 import gab.opencv.*;
 import java.awt.Rectangle;
 import processing.video.*;

@@ -1,3 +1,14 @@
+/**
+ * StageDetectorColor
+ * Test sketch for the StageDetector class
+ * Check also ImageFilteringWithBlobPersistence.pde for controlling filter values
+ *
+ * @Author: Jordi Tost @jorditost
+ * @Author URI: jorditost.com
+ *
+ * University of Applied Sciences Potsdam, 2014
+ */
+ 
 import gab.opencv.*;
 import java.awt.Rectangle;
 import SimpleOpenNI.*;
@@ -9,11 +20,11 @@ SimpleOpenNI kinect;
 StageDetector stage;
 ArrayList<StageElement> stageElements;
 
+// Image source
 static int IMAGE_SRC = 0;
 static int CAPTURE   = 1;
 static int KINECT    = 2;
-
-int source = IMAGE_SRC;
+int source = KINECT;
 
 Boolean realtimeUpdate = true;
 
@@ -43,6 +54,9 @@ void setup() {
   //stage.setChannel(GRAY);
   //stage.setContrast(1.5);
   stage.setThreshold(75);
+  
+  // List all filter values
+  stage.listFilterValues();
   
   size(stage.width, stage.height);
 }
