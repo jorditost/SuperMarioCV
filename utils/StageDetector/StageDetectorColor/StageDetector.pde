@@ -5,6 +5,7 @@
  * 
  * @Author: Jordi Tost @jorditost
  * @Author URI: jorditost.com
+ * @version: 0.2-beta
  *
  * University of Applied Sciences Potsdam, 2014
  */
@@ -15,6 +16,7 @@ import java.awt.Rectangle;
 import processing.video.*;
 
 public static String version = "v0.2-beta";
+
 // declare like:
 // enum TrackingColorMode {TRACK_COLOR_RGB, TRACK_COLOR_HSV, TRACK_COLOR_H, TRACK_COLOR_HS};
 public static final int GRAY = 0;  // More stable with video source
@@ -405,7 +407,6 @@ class StageDetector {
   }
   
   public void displayStageElements() {
-    
     for (StageElement stageElement : stageElements) {
       stageElement.display();
     }

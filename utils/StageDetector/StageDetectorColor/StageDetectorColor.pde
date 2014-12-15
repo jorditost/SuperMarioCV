@@ -14,17 +14,19 @@ import java.awt.Rectangle;
 import SimpleOpenNI.*;
 import processing.video.*;
 
+// Source vars
 PImage image;
 Capture video;
 SimpleOpenNI kinect;
-StageDetector stage;
-ArrayList<StageElement> stageElements;
 
-// Image source
 static int IMAGE_SRC = 0;
 static int CAPTURE   = 1;
 static int KINECT    = 2;
 int source = KINECT;
+
+// Detector vars
+StageDetector stage;
+ArrayList<StageElement> stageElements;
 
 Boolean realtimeUpdate = true;
 
@@ -34,7 +36,7 @@ void setup() {
   
   // IMAGE_SRC
   if (source == IMAGE_SRC) {
-    image = loadImage("after4.jpg");
+    image = loadImage("data/after4.jpg");
     stage = new StageDetector(this, image.width, image.height);
   
   // CAPTURE
@@ -64,23 +66,7 @@ void setup() {
 void draw() {
   
   if (realtimeUpdate) {
-    
-    // IMAGE
-    if (source == IMAGE_SRC) {
-      stage.detect(image);
-    
-    // CAPTURE
-    } else if (source == CAPTURE && video != null) {
-      if (video.available()) {
-        video.read();
-      }
-      stage.detect(video);
-    
-    // KINECT
-    } else if (source == KINECT && kinect != null) {
-      kinect.update();
-      stage.detect(kinect.rgbImage());
-    }
+    detectStage();
   }
   
   stage.displayBackground();
@@ -88,22 +74,31 @@ void draw() {
   stage.displayOutputImage();
 }
 
+void detectStage() {
+  
+  // IMAGE
+  if (source == IMAGE_SRC) {
+    stage.detect(image);
+  
+  // CAPTURE
+  } else if (source == CAPTURE && video != null) {
+    if (video.available()) {
+      video.read();
+    }
+    stage.detect(video);
+  
+  // KINECT
+  } else if (source == KINECT && kinect != null) {
+    kinect.update();
+    stage.detect(kinect.rgbImage());
+  }
+}
+
+// This is now useless since stage is detected in real-time
 void keyPressed() { 
   
   // Use enter to detect stage
   if (key == ENTER) {
-    
-    // CAPTURE
-    if (source == CAPTURE && video != null) {
-      if (video.available()) {
-        video.read();
-        stage.detect(video);
-      }
-    
-    // KINECT
-    } else if (source == KINECT && kinect != null) {
-      kinect.update();
-      stage.detect(kinect.rgbImage());
-    }
+    detectStage();
   }
 }

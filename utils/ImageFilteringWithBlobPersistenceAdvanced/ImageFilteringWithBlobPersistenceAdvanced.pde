@@ -1,16 +1,18 @@
 /**
- * Image Filtering
+ * ImageFilteringWithBlobPersistenceAdvanced
  * This sketch will help us to adjust the filter values to optimize blob detection
- *
- * It uses the OpenCV for Processing library by Greg Borenstein
- * https://github.com/atduskgreg/opencv-processing
  * 
  * Persistence algorithm by Daniel Shifmann:
  * http://shiffman.net/2011/04/26/opencv-matching-faces-over-time/
  *
- * @author: Jordi Tost @jorditost
- * @modified: 07/10/2014
- * 
+ * It uses the OpenCV for Processing library by Greg Borenstein
+ * https://github.com/atduskgreg/opencv-processing
+ *
+ * @author: Jordi Tost (@jorditost)
+ *
+ * Simple version with less filter options here: 
+ * https://github.com/jorditost/ImageFiltering/tree/master/ImageFilteringWithBlobPersistence
+ *
  * University of Applied Sciences Potsdam, 2014
  */
  
@@ -24,7 +26,7 @@ import controlP5.*;
 static int IMAGE_SRC = 0;
 static int CAPTURE   = 1;
 static int KINECT    = 2;
-int source = KINECT;
+int source = CAPTURE;
 
 public static final int GRAY = 0;
 public static final int S    = 1;

@@ -2,9 +2,11 @@
 
 *.rtf
 *.mov
+_[Cc]ontroller/
 _[Dd]ocs/
 _[Ee]ngine/
 _[Tt]ests/
+_PredefinedSettings/
 
 # General
 

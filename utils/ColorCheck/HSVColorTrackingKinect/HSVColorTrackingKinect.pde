@@ -1,3 +1,11 @@
+/**
+ * HSVColorTrackingKinect
+ * Greg Borenstein
+ * https://github.com/atduskgreg/opencv-processing-book/blob/master/code/hsv_color_tracking/HSVColorTracking/HSVColorTracking.pde
+ *
+ * Modified by Jordi Tost @jorditost (color selection + kinect rgb image)
+ */
+ 
 import SimpleOpenNI.*;
 import gab.opencv.*;
 import java.awt.Rectangle;

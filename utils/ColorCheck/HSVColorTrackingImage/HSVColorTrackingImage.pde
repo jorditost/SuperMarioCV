@@ -1,3 +1,11 @@
+/**
+ * HSVColorTrackingImage
+ * Greg Borenstein
+ * https://github.com/atduskgreg/opencv-processing-book/blob/master/code/hsv_color_tracking/HSVColorTracking/HSVColorTracking.pde
+ *
+ * Modified by Jordi Tost @jorditost (color selection + image source)
+ */
+ 
 import gab.opencv.*;
 import processing.video.*;
 import java.awt.Rectangle;

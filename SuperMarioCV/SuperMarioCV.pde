@@ -1,7 +1,8 @@
 /**
  * SuperMarioCV
  *
- * @author: Jordi Tost
+ * @Author: Jordi Tost @jorditost
+ * @Author URI: jorditost.com
  *
  * University of Applied Sciences Potsdam, 2014
  */
@@ -16,7 +17,7 @@
    - Red element proportions (bullet vs. banzai)
    
    StageDetector:
-   - Unify display() and displayBackground() functions for all detection methods and sources
+   - Unify display() and displayBackground() functions
    
    P52DGameEngine:
    - clearDynamicBoundaries(): Do we need it?
@@ -26,7 +27,9 @@
 import processing.opengl.*;
 import gab.opencv.*;
 
-boolean test = false;
+boolean test = true;
+
+// Screen vars
 static boolean showOnProjector = false;
 
 /*void init(){
@@ -37,29 +40,37 @@ static boolean showOnProjector = false;
  }
 }*/
 
+int screenWidth = 800;
+int screenHeight = 600;
+float scaleFactor = 1.6; //1.25;
+int backgroundColor = 255;
+
+// Source vars
+PImage image;
+Capture video;
+SimpleOpenNI kinect;
+
+static int IMAGE_SRC = 0;
+static int CAPTURE   = 1;
+static int KINECT    = 2;
+int source = KINECT;
+
+// Detector vars
+StageDetector stage;
+ArrayList<StageElement> stageElements;
+
 // Realtime vars
 Boolean realtimeDetect = true;
 int t, detectionRate = 1000;
 
-int screenWidth = 800;
-int screenHeight = 600;
-float scaleFactor = 1.6; //1.25;
-
-int backgroundColor = 255;
-
-// Jump & Run vars
+// Game Engine vars
 float DOWN_FORCE = 2;
 float ACCELERATION = 1.3;
 float DAMPENING = 0.5;
 
 float bulletPeriod = 3000;
 
-// Level vars
 MarioLevel marioLevel;
-
-// Background Detection vars
-StageDetector stage;
-ArrayList<StageElement> stageElements;
 
 
 ///////////
@@ -71,23 +82,44 @@ ArrayList<StageElement> stageElements;
 
 void setup() {
   
-  stage = new StageDetector(this, 640, 480, CAPTURE);
-  //stage = new StageDetector(this, 640, 480, KINECT);
-  //stage = new StageDetector(this, "input/after4.jpg");
-  //stage.setSource(CAPTURE);
-  stage.setMethod(BLOB_DETECTION);
-  //stage.setThreshold(70);
+  frameRate(30);
   
-  if (stage.source == IMAGE_SRC) {
+  // IMAGE_SRC
+  if (source == IMAGE_SRC) {
+    image = loadImage("data/after4.jpg");
+    stage = new StageDetector(this, image.width, image.height);
+    
     screenWidth = 512;
     screenHeight = 432;
-    scaleFactor = 0.5; 
+    scaleFactor = 0.5;
+  
+  // CAPTURE
+  } else if (source == CAPTURE) {
+    video = new Capture(this, 640, 480);
+    video.start();
+    stage = new StageDetector(this, 640, 480);
+  
+  // KINECT
+  } else if (source == KINECT) {
+    kinect = new SimpleOpenNI(this);
+    kinect.enableRGB();
+    stage = new StageDetector(this, 640, 480);
   }
+  
+  // Configure detector
+  stage.setThreshold(90);
+  //stage.setThreshold(90);
+  
+  // List all filter values
+  stage.listFilterValues();
 
+  // Scale screen size     
   screenWidth = int(scaleFactor*stage.width);
   screenHeight = int(scaleFactor*stage.height);
-
-  size(screenWidth, screenHeight, OPENGL);
+  
+  // Processing 2.0 breaks in OPENGL mode with Kinect
+  size(screenWidth, screenHeight);
+  //size(screenWidth, screenHeight, OPENGL);
   
   // set location - needs to be in setup()
   // set x parameter depending on the resolution of your 1st screen
@@ -103,17 +135,15 @@ void setup() {
   setupGameEngine();
 
   // Detect stage elements and initialize game
-  stageElements = scaleStageElementsArray(stage.detect(), scaleFactor);
+  detectStage();
   initializeGame();
-
-  frameRate(30);
 }
 
 // Draw loop
 void draw() {
   
   // Realtime detection for
-  if ((stage.method != IMAGE_DIFF) && realtimeDetect && (millis() - t >= detectionRate)) {
+  if (realtimeDetect && (millis() - t >= detectionRate)) {
     detectStage();
     updateGameStage();
     t = millis();
@@ -128,19 +158,20 @@ void draw() {
     fill(backgroundColor);
     rect(0,0,width,height);
     
-    if (test) stage.displayStageElements();
+    //if (test) stage.displayStageElements();
     
   } else {
-    if (realtimeDetect) {
-      stage.display();
-    } else {
-      stage.displayBackground();  
-    }
+    stage.displayBackground();
     
-    if (test) stage.displayStageElements();
+    if (test) {
+      //stage.displayStageElements();
+      stage.displayOutputImage();
+    }
   }
   
   popMatrix();
+  
+  //if (test) stage.displayStageElements();
   
   // to do
   activeScreen.draw(); 
@@ -153,6 +184,33 @@ void draw() {
   println("screenwidth: " + screenWidth + ", height: " + screenHeight);*/
 }
 
+/////////////////////
+// Detect Funtions
+/////////////////////
+
+void detectStage() {
+  
+  ArrayList<StageElement> tempStageElements = new ArrayList<StageElement>();
+  
+  // IMAGE
+  if (source == IMAGE_SRC) {
+    tempStageElements = stage.detect(image);
+  
+  // CAPTURE
+  } else if (source == CAPTURE && video != null) {
+    if (video.available()) {
+      video.read();
+    }
+    tempStageElements = stage.detect(video);
+  
+  // KINECT
+  } else if (source == KINECT && kinect != null) {
+    kinect.update();
+    tempStageElements = stage.detect(kinect.rgbImage());
+  }
+  
+  stageElements = scaleStageElementsArray(tempStageElements, scaleFactor);
+}
 
 //////////////////////////
 // Jump & Run Functions
@@ -179,10 +237,6 @@ void updateGameStage() {
   marioLevel.updatePlatforms(stageElements);
 }
 
-void detectStage() {
-  stageElements = scaleStageElementsArray(stage.detect(), scaleFactor);
-}
-
 ////////////////////
 // Event Handling
 ////////////////////
@@ -190,26 +244,11 @@ void detectStage() {
 void keyPressed() { 
   activeScreen.keyPressed(key, keyCode); 
   
-  // Update background image
+  // Detect stage
   if (key == ENTER) {
-      
-    stage.initBackground();
-    
-    // Detect for blob detection
-    if (stage.method == BLOB_DETECTION) {
       detectStage();
-      resetGame();
-    }
-  
-  // Update stage elements (post-its, etc)
-  } else if (key == ' ') {
-    
-    // Detect for Image Diff Detection
-    if (stage.method == IMAGE_DIFF) {
-      stage.initStage();
-      detectStage();
-      resetGame();
-    }
+      updateGameStage();
+      t = millis();
   
   // Reset Game
   } else if (key == BACKSPACE) {
@@ -534,11 +573,11 @@ class MarioLayer extends LevelLayer {
     for (StageElement stageElement : platformsArray) {
       
       // Check tube
-      if (stageElement.type == GREEN) {
+      if (stageElement.colorId == GREEN) {
         checkTube(stageElement);
       
       // Check Banzai
-      } else if (stageElement.type == RED) {
+      } else if (stageElement.colorId == RED) {
         checkBanzaiBill(stageElement);
         addDynamicPlatform(stageElement.rect.x, stageElement.rect.y, stageElement.rect.width, stageElement.rect.height);
         

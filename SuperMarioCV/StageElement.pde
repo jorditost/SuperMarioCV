@@ -1,10 +1,10 @@
 /**
  * StageElement Class
  * 
- * @Author: Jordi Tost
+ * @Author: Jordi Tost @jorditost
  * @Author URI: jorditost.com
  *
- * Fachhochschule Potsdam Interfacedesign, 2013-2014
+ * University of Applied Sciences Potsdam, 2014
  */
  
 import java.awt.Rectangle;
@@ -17,24 +17,51 @@ static int BLACK           = 4;
 
 class StageElement {
   
-  int type;
-  Rectangle rect;
+  PApplet parent;
   
-  StageElement() {
+  int colorId;
+  
+  // Contour
+  public Rectangle rect;
+  private Contour contour;
+  
+  public StageElement() {
     rect = new Rectangle();
-    type = NONE;
+    colorId = NONE;
   }
   
-  StageElement(Rectangle theRect, int theType) {
-    rect = theRect;
-    type = theType;
+  public void display() {
+    
+    //Rectangle r = contour.getBoundingBox();
+    
+    if (colorId == RED) {
+      stroke(255, 0, 0);
+      fill(255, 0, 0, 150);
+    } else if (colorId == GREEN) {
+      stroke(0, 255, 0);
+      fill(0, 255, 0, 100);
+    } else if (colorId == BLUE) {
+      stroke(0, 0, 255);
+      fill(0, 0, 255, 100);
+    } else {
+      stroke(255, 255, 0);
+      fill(255, 255, 0, 150);
+    }
+      
+    strokeWeight(1);
+    rect(rect.x, rect.y, rect.width, rect.height);
+  }
+  
+  public StageElement(Rectangle rect, int colorId) {
+    this.rect = rect;
+    this.colorId = colorId;
   }
   
   public Object clone() { 
      StageElement tmp = new StageElement(); 
-     tmp.type = type;
-     //tmp.rect = rect;
-     tmp.rect = (Rectangle)(rect.clone());
+     tmp.colorId = colorId;
+     tmp.rect = rect;
+     //tmp.rect = (Rectangle)(rect.clone());
      return tmp; 
   } 
 }
