@@ -24,8 +24,14 @@
    - Realtime: Update Mario position but not deleting it (now it needs jumping)
  */
  
-import processing.opengl.*;
+import SimpleOpenNI.*;
 import gab.opencv.*;
+import StageDetector.*;
+
+import java.awt.Rectangle;
+
+import processing.opengl.*;
+import processing.video.*;
 
 boolean test = true;
 
@@ -53,7 +59,7 @@ SimpleOpenNI kinect;
 static int IMAGE_SRC = 0;
 static int CAPTURE   = 1;
 static int KINECT    = 2;
-int source = KINECT;
+int source = IMAGE_SRC;
 
 // Detector vars
 StageDetector stage;
@@ -209,7 +215,7 @@ void detectStage() {
     tempStageElements = stage.detect(kinect.rgbImage());
   }
   
-  stageElements = scaleStageElementsArray(tempStageElements, scaleFactor);
+  stageElements = TransformUtils.scaleStageElementsArray(tempStageElements, scaleFactor);
 }
 
 //////////////////////////
@@ -572,43 +578,47 @@ class MarioLayer extends LevelLayer {
   void addDynamicPlatforms(ArrayList<StageElement> platformsArray) {
     for (StageElement stageElement : platformsArray) {
       
+      Rectangle boundingBox = stageElement.getBoundingBox();
+      
       // Check tube
-      if (stageElement.colorId == GREEN) {
+      if (stageElement.getTrackingColor() == TrackingColor.GREEN) {
         checkTube(stageElement);
       
       // Check Banzai
-      } else if (stageElement.colorId == RED) {
+      } else if (stageElement.getTrackingColor() == TrackingColor.RED) {
         checkBanzaiBill(stageElement);
-        addDynamicPlatform(stageElement.rect.x, stageElement.rect.y, stageElement.rect.width, stageElement.rect.height);
+        addDynamicPlatform(boundingBox.x, boundingBox.y, boundingBox.width, boundingBox.height);
         
       // General behaviour
       } else {
-        addDynamicPlatform(stageElement.rect.x, stageElement.rect.y, stageElement.rect.width, stageElement.rect.height);
+        addDynamicPlatform(boundingBox.x, boundingBox.y, boundingBox.width, boundingBox.height);
       }
     }
   }
   
   void checkTube(StageElement stageElement) {
     
+    Rectangle boundingBox = stageElement.getBoundingBox();
+    
     // Avoid small platforms
-    if (stageElement.rect.width < 15 ||  
+    if (boundingBox.width < 15 ||  
     // Avoid landscape oriented platforms
-       float(stageElement.rect.width / stageElement.rect.height) > 1.5) {
+       float(boundingBox.width / boundingBox.height) > 1.5) {
          
-      addDynamicPlatform(stageElement.rect.x, stageElement.rect.y, stageElement.rect.width, stageElement.rect.height);
+      addDynamicPlatform(boundingBox.x, boundingBox.y, boundingBox.width, boundingBox.height);
       return;
     }
     
     // Post-it: tunnel
-    if (float(stageElement.rect.height / stageElement.rect.width) < 2) {
+    if (float(boundingBox.height / boundingBox.width) < 2) {
       
-      addDynamicTube(stageElement.rect.x, stageElement.rect.y, stageElement.rect.width, stageElement.rect.height);
+      addDynamicTube(boundingBox.x, boundingBox.y, boundingBox.width, boundingBox.height);
     
     // Portrait mode: plant
     } /*else {
       boolean isNewMuncher = true;
       
-      addDynamicPlatform(stageElement.rect.x, stageElement.rect.y, stageElement.rect.width, stageElement.rect.height);
+      addDynamicPlatform(boundingBox.x, boundingBox.y, boundingBox.width, boundingBox.height);
         
       // Look if we already added it
       if (muncherPositions == null) {
@@ -617,7 +627,7 @@ class MarioLayer extends LevelLayer {
         
       } else {
         for (EnemyVector enemyVector : muncherPositions) {
-          if (abs(enemyVector.x - stageElement.rect.x) < 20 && abs(enemyVector.y - stageElement.rect.y) < 20) {
+          if (abs(enemyVector.x - boundingBox.x) < 20 && abs(enemyVector.y - boundingBox.y) < 20) {
             isNewMuncher = false;
             break;
           }
@@ -626,14 +636,16 @@ class MarioLayer extends LevelLayer {
       
       // Add new muncher
       if (isNewMuncher) {
-        Muncher muncher = new Muncher(stageElement.rect.x+0.5*stageElement.rect.width, stageElement.rect.y-8);
+        Muncher muncher = new Muncher(boundingBox.x+0.5*boundingBox.width, boundingBox.y-8);
         addInteractor(muncher);
-        muncherPositions.add(new EnemyVector(stageElement.rect.x, stageElement.rect.y));
+        muncherPositions.add(new EnemyVector(boundingBox.x, boundingBox.y));
       }
     }*/
   }
   
   void checkBanzaiBill(StageElement stageElement) {
+    
+    Rectangle boundingBox = stageElement.getBoundingBox();
     
     boolean isNewBanzai = true;
     boolean reshootBanzai = false;
@@ -645,7 +657,7 @@ class MarioLayer extends LevelLayer {
       
     } else {
       for (EnemyVector enemyVector : banzaiBillPositions) {
-        if (abs(enemyVector.x - stageElement.rect.x) < 20 && abs(enemyVector.y - stageElement.rect.y) < 20) {
+        if (abs(enemyVector.x - boundingBox.x) < 20 && abs(enemyVector.y - boundingBox.y) < 20) {
           isNewBanzai = false;
           
           if (millis() - enemyVector.lastUsed > bulletPeriod) {
@@ -660,22 +672,22 @@ class MarioLayer extends LevelLayer {
     if (isNewBanzai || reshootBanzai) {          
       
       // Big Banzai Bill
-      if (float(stageElement.rect.height / stageElement.rect.width) > 9) {
+      if (float(boundingBox.height / boundingBox.width) > 9) {
         
         if (isNewBanzai) { // Don't reshoot
-          BanzaiBill banzai = new BanzaiBill(stageElement.rect.x, stageElement.rect.y);
+          BanzaiBill banzai = new BanzaiBill(boundingBox.x, boundingBox.y);
           addInteractor(banzai);
         }  
       
       // Small Banzai Bill
-      } else if (float(stageElement.rect.height / stageElement.rect.width) > 5) {
-        BanzaiBullet banzai = new BanzaiBullet(stageElement.rect.x, stageElement.rect.y, stageElement.rect.width);
+      } else if (float(boundingBox.height / boundingBox.width) > 5) {
+        BanzaiBullet banzai = new BanzaiBullet(boundingBox.x, boundingBox.y, boundingBox.width);
         addInteractor(banzai);
       }
       
       // Just add if it's new
       if (isNewBanzai) {
-        banzaiBillPositions.add(new EnemyVector(stageElement.rect.x, stageElement.rect.y));
+        banzaiBillPositions.add(new EnemyVector(boundingBox.x, boundingBox.y));
       }
     }
   }
