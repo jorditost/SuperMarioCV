@@ -26,17 +26,17 @@
  
 import SimpleOpenNI.*;
 import gab.opencv.*;
-import StageDetector.*;
+import BitStage.*;
 
 import java.awt.Rectangle;
 
 import processing.opengl.*;
 import processing.video.*;
 
-boolean test = true;
-
-// Screen vars
+// Config vars
+static boolean test = true;
 static boolean showOnProjector = false;
+static boolean addExtraDigitalContent = false;
 
 /*void init(){
  if (showOnProjector) {
@@ -61,8 +61,8 @@ static int CAPTURE   = 1;
 static int KINECT    = 2;
 int source = IMAGE_SRC;
 
-// Detector vars
-StageDetector stage;
+// BitDetector vars
+BitStage stage;
 ArrayList<StageElement> stageElements;
 
 // Realtime vars
@@ -93,7 +93,7 @@ void setup() {
   // IMAGE_SRC
   if (source == IMAGE_SRC) {
     image = loadImage("data/after4.jpg");
-    stage = new StageDetector(this, image.width, image.height);
+    stage = new BitStage(this, image.width, image.height);
     
     screenWidth = 512;
     screenHeight = 432;
@@ -103,13 +103,13 @@ void setup() {
   } else if (source == CAPTURE) {
     video = new Capture(this, 640, 480);
     video.start();
-    stage = new StageDetector(this, 640, 480);
+    stage = new BitStage(this, 640, 480);
   
   // KINECT
   } else if (source == KINECT) {
     kinect = new SimpleOpenNI(this);
     kinect.enableRGB();
-    stage = new StageDetector(this, 640, 480);
+    stage = new BitStage(this, 640, 480);
   }
   
   // Configure detector
@@ -158,36 +158,28 @@ void draw() {
   pushMatrix();
   scale(scaleFactor);
   
+  // Display on Projector
   if (showOnProjector) {
     
     noStroke();
     fill(backgroundColor);
     rect(0,0,width,height);
-    
-    //if (test) stage.displayStageElements();
-    
+  
+  // Display on screen
   } else {
-    stage.displayBackground();
-    
-    if (test) {
-      //stage.displayStageElements();
-      stage.displayOutputImage();
-    }
+    stage.drawBackground();
   }
   
   popMatrix();
   
-  //if (test) stage.displayStageElements();
+  if (test) {
+    stage.drawStageElements();
+    //stage.drawOutputImage();
+  }
   
   // to do
   activeScreen.draw(); 
   SoundManager.draw();
-  
-  /*fill(255);
-  stroke(255,0,0);
-  ellipse(screenWidth, screenHeight, 50, 50);
-  
-  println("screenwidth: " + screenWidth + ", height: " + screenHeight);*/
 }
 
 /////////////////////
@@ -198,22 +190,28 @@ void detectStage() {
   
   ArrayList<StageElement> tempStageElements = new ArrayList<StageElement>();
   
+  // 1. Load source images
+  
   // IMAGE
   if (source == IMAGE_SRC) {
-    tempStageElements = stage.detect(image);
+    stage.loadImage(image);
   
   // CAPTURE
   } else if (source == CAPTURE && video != null) {
     if (video.available()) {
       video.read();
     }
-    tempStageElements = stage.detect(video);
+    
+    stage.loadImage(video);
   
   // KINECT
   } else if (source == KINECT && kinect != null) {
     kinect.update();
-    tempStageElements = stage.detect(kinect.rgbImage());
+    stage.loadImage(kinect.rgbImage());
   }
+  
+  // 2. Detect stage elements
+  tempStageElements = stage.detect();
   
   stageElements = TransformUtils.scaleStageElementsArray(tempStageElements, scaleFactor);
 }
@@ -387,7 +385,7 @@ class MarioLayer extends LevelLayer {
     }
   }
   
-  // Add static platforms (ground, walls
+  // Add static platforms (ground, walls, etc.)
   void addStaticPlatforms() {
     
     // Ground and walls
@@ -395,71 +393,75 @@ class MarioLayer extends LevelLayer {
     addBoundary(new Boundary(width+1, height, width+1, 0, STATIC));
     
     // the ground now has an unjumpable gap:
-    //addStaticPlatform(0, height-75, 280, height);
-    //addStaticPlatform(width-260, height-70, width, height);
+    if (!addExtraDigitalContent) {
+      addStaticPlatform(0, height-75, 280, height);
+      addStaticPlatform(width-260, height-70, width, height);
+      
+      // Add blocks
+      addBlocks(160, height-130, 5, 1);
     
-    // Add blocks
-    //addBlocks(160, height-130, 5, 1);
+      // Add U-Blocks
+      addClouds(width/2+15, 20, 4, 1);
+      addClouds(width/2+15, 20+16, 1, 3);
+      addClouds(width/2+15+(3*16), 20+16, 1, 3);
     
-    // Add clouds
-    //addClouds(width/2+15, 20, 4, 1);
-    //addClouds(width/2+15, 20+16, 1, 3);
-    //addClouds(width/2+15+(3*16), 20+16, 1, 3);
+      return;
+    }
     
     // Add Tubes
     addStaticTube(124, height-350);
     addDynamicTube(965, height-151, 40, 65);
     
     ///////////////////////////////////////////////////////////////////////////////////
-// PAT Adds some other static platforms
-// Tisch/BOdenPlatform
+    
+    // Tisch / Boden-Platform
     addStaticPlatform(0, height-80, 380, height);                  //
     addStaticPlatform(width-380, height-80, width, height);        //
     
-// MARIO 1 ZITAT W1-1 
+    // MARIO 1 ZITAT W1-1 
     addBlocks(116,height-196, 1, 1);
     //addStaticPlatform(116,height-196, 16, 16);         // Pyramide +34
     addBlocks(82, height-140, 5, 1);
     //addStaticPlatform(82, height-140, 80, 16);       //////
     
-// STUFEN Mario 1 W1-1
+    // STUFEN Mario 1 W1-1
     addBlocks(width-340, height-160, 1, 1);
     addBlocks(width-340, height-144, 2, 1);
     addBlocks(width-340, height-128, 3, 1);
     addBlocks(width-340, height-112, 4, 1);
     addBlocks(width-340, height-96, 5, 1);
     
-// U-FORM
+    // U-FORM
     addBlocks(814, height-300, 8, 1);
     addBlocks(814, height-316, 1, 1);
     addBlocks(926, height-332, 1, 2);
    
-// MARIO 3 ZITAT W1-1    
-//    addStaticPlatform(520, height-352, 64, 16);        // Kurz
+    // MARIO 3 ZITAT W1-1    
+    //addStaticPlatform(520, height-352, 64, 16);        // Kurz
     
     addBlocks(600, height-400, 13, 1);
     //addStaticPlatform(600, height-400, 208, 16);       // Lang
     
-// FREE LEVEL RÄTSEL    
-
+    // FREE LEVEL RÄTSEL    
     addClouds(622, height-516, 4, 1);
     addClouds(734, height-516, 12, 1);
     addClouds(734, height-532, 1, 1);
     addClouds(910, height-532, 1, 1);
     
-// C-FORM +   
+    // C-FORM +   
     //addClouds(770, height-712, 1, 8);
     //addClouds(786, height-712, 4, 1);
     //addClouds(786, height-600, 4, 1);
     addClouds(682, height-688, 5, 1);
 
-// n-FORM      
-//    addStaticPlatform(396,80,112, 16);                 // DACH
+    // n-FORM      
+    //addStaticPlatform(396,80,112, 16);                 // DACH
     addClouds(396,96, 1, 6);                 // Wände
     addClouds(492,96, 1, 6);                 // Wände
   
     addClouds( 32, height-430, 2, 1);        // links vom Bild  
-// 3 aus 5  
+    
+    // 3 aus 5  
     //addStaticPlatform(132, 36, 800, 16);           // Lang oben links  
     addClouds( 66, 108,  1, 1);          // Block links
     addClouds(132, 108,  1, 1);          // Block links
@@ -467,8 +469,9 @@ class MarioLayer extends LevelLayer {
     addClouds(264, 108,  1, 1);          // Block links
     addClouds(330, 108,  1, 1);          // Block links 
     
-//REALFAKE Platform//////////////////////////////////////
-    //WAGE-TEST
+    // REALFAKE Platform //////////////////////////////////////
+
+    // WAGE-TEST
     //addStaticPlatform(0, height-80, width, 80);      // Wage Test /109->80=29
 
     addStaticPlatform(407, height-184, 56, 56);        // LightSwitch 
@@ -482,7 +485,8 @@ class MarioLayer extends LevelLayer {
     //addStaticPlatform(width-132,height-91, 126, 32);     // Bilder Rahmen
     //(addStaticPlatform(width-46,height-136, 70, 16); 
     //addStaticPlatform(width-380,height-212, 64, 104);  //GAMEBOY +34
-///////////////////////////////////////////////////////////////////////////////////
+    
+    ///////////////////////////////////////////////////////////////////////////////////
   }
   
   void addInteractiveElements() {
