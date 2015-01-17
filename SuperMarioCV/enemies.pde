@@ -1,9 +1,11 @@
 class EnemyVector {
+  int id;
   float x;
   float y;
   float lastUsed;
   
-  EnemyVector(float mx, float my) {
+  EnemyVector(int mid, float mx, float my) {
+    id = mid;
     x = mx;
     y = my;
     lastUsed = millis();
@@ -89,6 +91,16 @@ class BanzaiBill extends MarioEnemy {
    */
   void hit() {}
 }
+
+/*class BanzaiCanon {
+  int x;
+  int y;
+  int timer;
+  BanzaiCanon(float mx, float my, int canonWidth) {
+    BanzaiBullet banzai = new BanzaiBullet(mx, my, canonWidth);
+    addInteractor(banzai);
+  }
+}*/
 
 /**
  * The small bullet that comes out of nowhere O_O

@@ -74,7 +74,7 @@ float DOWN_FORCE = 2;
 float ACCELERATION = 1.3;
 float DAMPENING = 0.5;
 
-float bulletPeriod = 3000;
+float bulletPeriod = 5000;
 
 MarioLevel marioLevel;
 
@@ -222,14 +222,6 @@ void detectStage() {
   //stageElements = TransformUtils.scaleStageElementsArray(tempStageElements, scaleFactor);
   stageElements = stage.detect();
   //TransformUtils.scaleStageElementsArray(stageElements, scaleFactor);
-  
-  /*for (StageElement stageElement : stageElements) {
-    Rectangle r = stageElement.getBoundingBox();
-    r.x      *= scaleFactor;
-    r.y      *= scaleFactor;
-    r.width  *= scaleFactor;
-    r.height *= scaleFactor;
-  }*/
 }
 
 //////////////////////////
@@ -250,6 +242,13 @@ void initializeGame() {
 
 void resetGame() {
   clearScreens();
+  
+  // Set all objects as new
+  for (StageElement stageElement : stageElements) {
+    stageElement.setInitialized(false);
+  }
+  
+  // Initialize game
   initializeGame();
 }
 
@@ -341,11 +340,13 @@ class MarioLayer extends LevelLayer {
   
   ArrayList<StageElement> dynamicPlatforms;
   
-  ArrayList<EnemyVector> muncherPositions;
-  ArrayList<EnemyVector> banzaiBillPositions;
+  //ArrayList<EnemyVector> muncherPositions;
+  ArrayList<EnemyVector> banzaiBulletPositions;
   
   MarioLayer(Level owner, ArrayList<StageElement> platformsArray) {
     super(owner);
+    
+    banzaiBulletPositions = new ArrayList<EnemyVector>();
     
     // Add static platforms (walls, ground, etc.)
     addStaticPlatforms();
@@ -607,14 +608,28 @@ class MarioLayer extends LevelLayer {
       // It's new: do something and set it as initialized
       if (stageElement.isNew()) {
         PApplet.println("new " + trackingColor.displayName() + " stage element! " + Math.random());
-        stageElement.initialized();
         
+        // RED Elements
         if (stageElement.getTrackingColor() == TrackingColor.RED) {
-          addCoins(r.x + (r.width - 14)/2, r.y - 20, 13);
+          //BanzaiBullet banzai = new BanzaiBullet(r.x, r.y, r.width);
+          //addInteractor(banzai);
+          //checkBanzaiBill(r);
+          addBanzaiBullet(stageElement.id, r);
+        
+        // BLUE Elements
+        } else if (stageElement.getTrackingColor() == TrackingColor.BLUE) {          
+            addCoins(r.x + (r.width - 14)/2, r.y - 20, 13);
+            // Erster Koopa     // +34
+            //Koopa koopa = new Koopa(r.x + (r.width - 14)/2, r.y - 20);         // Erster links
+            //addInteractor(koopa);
         }
         
-        if (stageElement.getTrackingColor() == TrackingColor.GREEN) {
-          addCoins(r.x + (r.width - 14)/2, r.y - 20, 13);
+        stageElement.initialized();
+      
+      // Not new!
+      } else {
+        if (stageElement.getTrackingColor() == TrackingColor.RED) {
+          checkBanzaiBullet(stageElement.id, r);
         }
       }
       
@@ -683,21 +698,44 @@ class MarioLayer extends LevelLayer {
     }*/
   }
   
-  void checkBanzaiBill(StageElement stageElement) {
+  void addBanzaiBullet(int id, Rectangle r) {
     
-    Rectangle boundingBox = stageElement.getBoundingBox();
+    BanzaiBullet banzai = new BanzaiBullet(r.x, r.y, r.width);
+    addInteractor(banzai);
+    
+    banzaiBulletPositions.add(new EnemyVector(id, r.x, r.y));
+  }
+  
+  void checkBanzaiBullet(int id, Rectangle r) {
+    
+    for (EnemyVector enemyVector : banzaiBulletPositions) {
+      if (enemyVector.id == id) {
+        if (millis() - enemyVector.lastUsed > bulletPeriod) {
+          enemyVector.lastUsed = millis();
+          
+          BanzaiBullet banzai = new BanzaiBullet(r.x, r.y, r.width);
+          addInteractor(banzai);
+        }
+      }
+    }
+  }
+  
+  /*void checkBanzaiBill(Rectangle r) {
+    
+    //Rectangle boundingBox = stageElement.getBoundingBox();
     
     boolean isNewBanzai = true;
     boolean reshootBanzai = false;
         
     // Look if we already added it
-    if (banzaiBillPositions == null) {
-      banzaiBillPositions = new ArrayList<EnemyVector>();
+    if (banzaiBulletPositions == null) {
+      banzaiBulletPositions = new ArrayList<EnemyVector>();
       isNewBanzai = true;
+      println("ADD NEW BANZAI!!!");
       
     } else {
-      for (EnemyVector enemyVector : banzaiBillPositions) {
-        if (abs(enemyVector.x - boundingBox.x) < 20 && abs(enemyVector.y - boundingBox.y) < 20) {
+      for (EnemyVector enemyVector : banzaiBulletPositions) {
+        if (abs(enemyVector.x - r.x) < 20 && abs(enemyVector.y - r.y) < 20) {
           isNewBanzai = false;
           
           if (millis() - enemyVector.lastUsed > bulletPeriod) {
@@ -710,28 +748,17 @@ class MarioLayer extends LevelLayer {
     
     // Add new Banzai
     if (isNewBanzai || reshootBanzai) {          
-      
-      // Big Banzai Bill
-      if (float(boundingBox.height / boundingBox.width) > 9) {
-        
-        if (isNewBanzai) { // Don't reshoot
-          BanzaiBill banzai = new BanzaiBill(boundingBox.x, boundingBox.y);
-          addInteractor(banzai);
-        }  
-      
-      // Small Banzai Bill
-      } else if (float(boundingBox.height / boundingBox.width) > 5) {
-        BanzaiBullet banzai = new BanzaiBullet(boundingBox.x, boundingBox.y, boundingBox.width);
+      //if (float(r.height / r.width) > 5) {
+        BanzaiBullet banzai = new BanzaiBullet(r.x, r.y, r.width);
         addInteractor(banzai);
-      }
+      //}
       
       // Just add if it's new
       if (isNewBanzai) {
-        banzaiBillPositions.add(new EnemyVector(boundingBox.x, boundingBox.y));
+        banzaiBulletPositions.add(new EnemyVector(1, r.x, r.y));
       }
     }
-  }
-  
+  }*/
   
   // Clear dynamic platforms
   void clearDynamicPlatforms() {
