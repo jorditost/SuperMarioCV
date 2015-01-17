@@ -1,4 +1,4 @@
-/**
+  /**
  * SuperMarioCV
  *
  * @Author: Jordi Tost @jorditost
@@ -48,8 +48,8 @@ static boolean addExtraDigitalContent = false;
 
 int screenWidth = 800;
 int screenHeight = 600;
-float scaleFactor = 1.6; //1.25;
 int backgroundColor = 255;
+static float scaleFactor = 1.6; //1.25;
 
 // Source vars
 PImage image;
@@ -114,7 +114,13 @@ void setup() {
   
   // Configure detector
   stage.setThreshold(90);
-  //stage.setThreshold(90);
+  
+  // Color Tracking
+  stage.useColorTracking();
+  //stage.useColorTracking(163, -100, true, 20, 170);
+  stage.detectRed(166);  //167;
+  //stage.detectGreen(44); //37;
+  stage.detectBlue(104); //104;
   
   // List all filter values
   stage.listFilterValues();
@@ -168,6 +174,7 @@ void draw() {
   // Display on screen
   } else {
     stage.drawBackground();
+    stage.drawStageElements();
   }
   
   popMatrix();
@@ -188,7 +195,7 @@ void draw() {
 
 void detectStage() {
   
-  ArrayList<StageElement> tempStageElements = new ArrayList<StageElement>();
+  //ArrayList<StageElement> tempStageElements = new ArrayList<StageElement>();
   
   // 1. Load source images
   
@@ -211,9 +218,18 @@ void detectStage() {
   }
   
   // 2. Detect stage elements
-  tempStageElements = stage.detect();
+  //ArrayList<StageElement> tempStageElements = stage.detect();  
+  //stageElements = TransformUtils.scaleStageElementsArray(tempStageElements, scaleFactor);
+  stageElements = stage.detect();
+  //TransformUtils.scaleStageElementsArray(stageElements, scaleFactor);
   
-  stageElements = TransformUtils.scaleStageElementsArray(tempStageElements, scaleFactor);
+  /*for (StageElement stageElement : stageElements) {
+    Rectangle r = stageElement.getBoundingBox();
+    r.x      *= scaleFactor;
+    r.y      *= scaleFactor;
+    r.width  *= scaleFactor;
+    r.height *= scaleFactor;
+  }*/
 }
 
 //////////////////////////
@@ -582,41 +598,61 @@ class MarioLayer extends LevelLayer {
   void addDynamicPlatforms(ArrayList<StageElement> platformsArray) {
     for (StageElement stageElement : platformsArray) {
       
-      Rectangle boundingBox = stageElement.getBoundingBox();
+      // Get bounding box's scaled version
+      Rectangle r = TransformUtils.scaleBoundingBox(stageElement.getBoundingBox(), scaleFactor);
+      
+      // Get tracking color
+      TrackingColor trackingColor = stageElement.getTrackingColor();
+      
+      // It's new: do something and set it as initialized
+      if (stageElement.isNew()) {
+        PApplet.println("new " + trackingColor.displayName() + " stage element! " + Math.random());
+        stageElement.initialized();
+        
+        if (stageElement.getTrackingColor() == TrackingColor.RED) {
+          addCoins(r.x + (r.width - 14)/2, r.y - 20, 13);
+        }
+        
+        if (stageElement.getTrackingColor() == TrackingColor.GREEN) {
+          addCoins(r.x + (r.width - 14)/2, r.y - 20, 13);
+        }
+      }
+      
+      addDynamicPlatform(r.x, r.y, r.width, r.height);
       
       // Check tube
-      if (stageElement.getTrackingColor() == TrackingColor.GREEN) {
+      /*if (stageElement.getTrackingColor() == TrackingColor.GREEN) {
         checkTube(stageElement);
       
       // Check Banzai
       } else if (stageElement.getTrackingColor() == TrackingColor.RED) {
         checkBanzaiBill(stageElement);
-        addDynamicPlatform(boundingBox.x, boundingBox.y, boundingBox.width, boundingBox.height);
+        addDynamicPlatform(r.x, r.y, r.width, r.height);
         
       // General behaviour
       } else {
-        addDynamicPlatform(boundingBox.x, boundingBox.y, boundingBox.width, boundingBox.height);
-      }
+        addDynamicPlatform(r.x, r.y, r.width, r.height);
+      }*/
     }
   }
   
   void checkTube(StageElement stageElement) {
     
-    Rectangle boundingBox = stageElement.getBoundingBox();
+    Rectangle r = stageElement.getBoundingBox();
     
     // Avoid small platforms
-    if (boundingBox.width < 15 ||  
+    if (r.width < 15 ||  
     // Avoid landscape oriented platforms
-       float(boundingBox.width / boundingBox.height) > 1.5) {
+       float(r.width / r.height) > 1.5) {
          
-      addDynamicPlatform(boundingBox.x, boundingBox.y, boundingBox.width, boundingBox.height);
+      addDynamicPlatform(r.x, r.y, r.width, r.height);
       return;
     }
     
     // Post-it: tunnel
-    if (float(boundingBox.height / boundingBox.width) < 2) {
+    if (float(r.height / r.width) < 2) {
       
-      addDynamicTube(boundingBox.x, boundingBox.y, boundingBox.width, boundingBox.height);
+      addDynamicTube(r.x, r.y, r.width, r.height);
     
     // Portrait mode: plant
     } /*else {

@@ -26,7 +26,7 @@ import controlP5.*;
 static int IMAGE_SRC = 0;
 static int CAPTURE   = 1;
 static int KINECT    = 2;
-int source = CAPTURE;
+int source = IMAGE_SRC;
 
 public static final int GRAY = 0;
 public static final int S    = 1;
@@ -78,7 +78,8 @@ void setup() {
     
   // CAPTURE
   } else if (source == CAPTURE) {
-    video = new Capture(this, 640, 480);
+    printCameras();
+    video = new Capture(this, 640, 480, "USB 2.0 Camera");
     video.start();
     opencv = new OpenCV(this, video.width, video.height);
   
@@ -250,8 +251,12 @@ void detectBlobs() {
   
   //println(contours.length);
   
-  // Check if the detected blobs already exist are new or some has disappeared. 
+  // Check if the detected blobs already exist, are new, or some has disappeared. 
   
+  blobPersistence();
+}
+
+void blobPersistence() {
   // SCENARIO 1 
   // blobList is empty
   if (blobList.isEmpty()) {
@@ -600,3 +605,19 @@ void setLock(Controller theController, boolean theValue) {
   }
 }
 
+//////////////////
+// Camera Utils
+//////////////////
+
+void printCameras() {
+  String[] cameras = Capture.list();
+  if (cameras.length == 0) {
+    println("There are no cameras available for capture.");
+    exit();
+  } else {
+    println("Available cameras:");
+    for (int i = 0; i < cameras.length; i++) {
+      println(cameras[i]);
+    }
+  }
+}

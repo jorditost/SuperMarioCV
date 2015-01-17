@@ -47,6 +47,7 @@ void draw() {
   
   //opencv.dilate();
   opencv.erode();
+  opencv.erode();
   
   // <6> Display the processed image for reference.
   image(opencv.getOutput(), 3*width/4, 3*height/4, width/4, height/4);
@@ -55,9 +56,28 @@ void draw() {
   //     Passing 'true' sorts them by descending area.
   contours = opencv.findContours(true,true);
   
+  contours = parseContours(contours);
+  
+  println("num contours: " + contours.size());
   // <8> Check to make sure we've found any contours
   if (contours.size() > 0) {
-  
+    
+    for (Contour c : contours) {
+      // <10> Find the bounding box of the largest contour,
+      //      and hence our object.
+      Rectangle r = c.getBoundingBox();
+    
+      // <11> Draw the bounding box of our object
+      noFill(); 
+      strokeWeight(1); 
+      stroke(255, 0, 0);
+      rect(r.x, r.y, r.width, r.height);
+      // <12> Draw a dot in the middle of the bounding box, on the object.
+      noStroke(); 
+      fill(255, 0, 0);
+      //ellipse(r.x + r.width/2, r.y + r.height/2, 30, 30);
+    }
+    
     // <9> Get the first contour, which will be the largest one
     Contour biggestContour = contours.get(0);
   
@@ -76,6 +96,26 @@ void draw() {
     ellipse(r.x + r.width/2, r.y + r.height/2, 30, 30);
   }
 }
+
+ArrayList<Contour> parseContours(ArrayList<Contour> contoursArray) {
+      
+    
+    ArrayList<Contour> parsedContours = new ArrayList<Contour>();
+      
+    for (Contour contour : contoursArray) {
+        
+      Rectangle r = contour.getBoundingBox();
+        
+      if (//(float(r.width)/float(displayWidth) > 0.3 || float(r.height)/float(displayWidth) > 0.3) ||
+         (r.width > 400 || r.height > 400) ||
+         (r.width < 20 && r.height < 20))
+        continue;
+        
+      parsedContours.add(contour);
+      }
+      
+      return parsedContours;
+  }
 
 void mousePressed() {
   
