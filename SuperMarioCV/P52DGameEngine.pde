@@ -1746,12 +1746,13 @@ abstract class LevelLayer {
   // TODO: Fix remove boundaries!
   void clearDynamicBoundaries() {
     
-    /*for (Boundary b: boundaries) {
+    for (Boundary b: boundaries) {
       //b.draw(x,y,w,h);
       if (b.type == DYNAMIC) {
-        boundaries.remove(b);
+        removeBoundary(b);
+        //boundaries.remove(b);
       }
-    }*/
+    }
   }
 
   // The list of static, non-interacting sprites, building up the background

@@ -1,4 +1,4 @@
-  /**
+/**
  * SuperMarioCV
  *
  * @Author: Jordi Tost @jorditost
@@ -34,9 +34,9 @@ import processing.opengl.*;
 import processing.video.*;
 
 // Config vars
-static boolean test = true;
-static boolean showOnProjector = false;
-static boolean addExtraDigitalContent = false;
+static boolean test = false;
+static boolean showOnProjector = true;
+static boolean addExtraDigitalContent = true;
 
 /*void init(){
  if (showOnProjector) {
@@ -49,7 +49,7 @@ static boolean addExtraDigitalContent = false;
 int screenWidth = 800;
 int screenHeight = 600;
 int backgroundColor = 255;
-static float scaleFactor = 1.6; //1.25;
+static float scaleFactor = 1.6; //1.25; // 1.6 is to get the 640 from the kinect to 1024
 
 // Source vars
 PImage image;
@@ -59,7 +59,7 @@ SimpleOpenNI kinect;
 static int IMAGE_SRC = 0;
 static int CAPTURE   = 1;
 static int KINECT    = 2;
-int source = IMAGE_SRC;
+int source = KINECT;
 
 // BitDetector vars
 BitStage stage;
@@ -72,7 +72,7 @@ int t, detectionRate = 1000;
 // Game Engine vars
 float DOWN_FORCE = 2;
 float ACCELERATION = 1.3;
-float DAMPENING = 0.5;
+float DAMPENING = 0.65;//0.5;
 
 float bulletPeriod = 5000;
 
@@ -113,14 +113,14 @@ void setup() {
   }
   
   // Configure detector
-  stage.setThreshold(90);
+  stage.setThreshold(115); // 90
   
   // Color Tracking
-  stage.useColorTracking();
+  //stage.useColorTracking();
   //stage.useColorTracking(163, -100, true, 20, 170);
-  stage.detectRed(166);  //167;
+  //stage.detectRed(8);  //166;
   //stage.detectGreen(44); //37;
-  stage.detectBlue(104); //104;
+  //stage.detectBlue(105); //104;
   
   // List all filter values
   stage.listFilterValues();
@@ -135,10 +135,10 @@ void setup() {
   
   // set location - needs to be in setup()
   // set x parameter depending on the resolution of your 1st screen
-  if (showOnProjector) {
+  /*if (showOnProjector) {
     frame.setLocation(1440,0);
-  }
-  
+  }*/
+    
   noLoop();
   
   t = millis();
@@ -174,15 +174,19 @@ void draw() {
   // Display on screen
   } else {
     stage.drawBackground();
-    stage.drawStageElements();
+    //noStroke();
+    //fill(backgroundColor);
+    //rect(0,0,width,height);
+    
+    //stage.drawStageElements();
+  }
+  
+  if (test) {
+    //stage.drawStageElements();
+    //stage.drawOutputImage();
   }
   
   popMatrix();
-  
-  if (test) {
-    stage.drawStageElements();
-    //stage.drawOutputImage();
-  }
   
   // to do
   activeScreen.draw(); 
@@ -406,7 +410,7 @@ class MarioLayer extends LevelLayer {
   void addStaticPlatforms() {
     
     // Ground and walls
-    addBoundary(new Boundary(-1, 0, -1, height, STATIC));
+    addBoundary(new Boundary(-3, 0, -1, height, STATIC));
     addBoundary(new Boundary(width+1, height, width+1, 0, STATIC));
     
     // the ground now has an unjumpable gap:
@@ -426,14 +430,14 @@ class MarioLayer extends LevelLayer {
     }
     
     // Add Tubes
-    addStaticTube(124, height-350);
-    addDynamicTube(965, height-151, 40, 65);
+    //addStaticTube(124, height-350);
+    //addDynamicTube(965, height-151, 40, 65);
     
     ///////////////////////////////////////////////////////////////////////////////////
     
     // Tisch / Boden-Platform
-    addStaticPlatform(0, height-80, 380, height);                  //
-    addStaticPlatform(width-380, height-80, width, height);        //
+    addStaticPlatform(0, height-1, 490, height);                  //
+    //addStaticPlatform(width-380, height-80, width, height);        //
     
     // MARIO 1 ZITAT W1-1 
     addBlocks(116,height-196, 1, 1);
@@ -442,11 +446,11 @@ class MarioLayer extends LevelLayer {
     //addStaticPlatform(82, height-140, 80, 16);       //////
     
     // STUFEN Mario 1 W1-1
-    addBlocks(width-340, height-160, 1, 1);
+    /*addBlocks(width-340, height-160, 1, 1);
     addBlocks(width-340, height-144, 2, 1);
     addBlocks(width-340, height-128, 3, 1);
     addBlocks(width-340, height-112, 4, 1);
-    addBlocks(width-340, height-96, 5, 1);
+    addBlocks(width-340, height-96, 5, 1);*/
     
     // U-FORM
     addBlocks(814, height-300, 8, 1);
@@ -491,13 +495,13 @@ class MarioLayer extends LevelLayer {
     // WAGE-TEST
     //addStaticPlatform(0, height-80, width, 80);      // Wage Test /109->80=29
 
-    addStaticPlatform(407, height-184, 56, 56);        // LightSwitch 
+    /*addStaticPlatform(407, height-184, 56, 56);        // LightSwitch 
     
     addStaticPlatform( 66,height-350, 160, 16);        // BILD Lang unten links
     addStaticPlatform(262,height-350,  36, 16);        // Kurz unten rechts
     addStaticPlatform( 66,height-506, 16, 156);        // Hoch links
     addStaticPlatform( 82,height-506, 214, 16);        // Lang oben 
-    addStaticPlatform(280,height-490, 16, 140);        // Hoch rechts
+    addStaticPlatform(280,height-490, 16, 140);        // Hoch rechts*/
     
     //addStaticPlatform(width-132,height-91, 126, 32);     // Bilder Rahmen
     //(addStaticPlatform(width-46,height-136, 70, 16); 
@@ -520,8 +524,8 @@ class MarioLayer extends LevelLayer {
     addInteractor(koopa1);
     
     // Koopa rechts unten    
-    Koopa koopa3 = new Koopa(width-148, height-94);    // Unten rechts
-    addInteractor(koopa3);
+    //Koopa koopa3 = new Koopa(width-148, height-94);    // Unten rechts
+    //addInteractor(koopa3);
     
     // Koopa rechts mitte    
     Koopa koopa2 = new Koopa(width-128, height-314);   // Mitte rechts
@@ -699,6 +703,12 @@ class MarioLayer extends LevelLayer {
   }
   
   void addBanzaiBullet(int id, Rectangle r) {
+    
+    if (r.x < 10 || r.y < 10 || 
+        float(r.height / r.width) > 5 || 
+        float(r.width / r.height) > 5) {
+      return;
+    }
     
     BanzaiBullet banzai = new BanzaiBullet(r.x, r.y, r.width);
     addInteractor(banzai);
@@ -1014,8 +1024,8 @@ class MarioLayer extends LevelLayer {
 class Mario extends Player {
 
   int score = 0;
-  float speed = 4;
-  float jumpImpulse = -80;
+  float speed = 2.5;//4;
+  float jumpImpulse = -55;//-80;
   float initX, initY;
   boolean isDying;
   

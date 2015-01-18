@@ -24,7 +24,8 @@ void setup() {
   kinect.enableRGB();
   
   opencv = new OpenCV(this, 640, 480);
-  size(opencv.width, opencv.height, P2D);
+  size(opencv.width, opencv.height);
+  //size(opencv.width, opencv.height, P2D);
   contours = new ArrayList<Contour>();
 }
 

@@ -1,5 +1,5 @@
 /**
- * ImageFilteringWithBlobPersistenceAdvanced
+ * ImageFilteringColorTracking
  * This sketch will help us to adjust the filter values to optimize blob detection
  * 
  * Persistence algorithm by Daniel Shifmann:
@@ -38,6 +38,11 @@ PImage src, preProcessedImage, processedImage, contoursImage;
 
 ArrayList<Contour> contours;
 
+// <1> Set the range of Hue values for our filter
+boolean changeColor = false;
+int rangeLow = 20;
+int rangeHigh = 35;
+
 // List of detected contours parsed as blobs (every frame)
 ArrayList<Contour> newBlobContours;
 
@@ -48,9 +53,8 @@ ArrayList<Blob> blobList;
 int blobCount = 0;
 
 // Detection params
-int channel = S;
-float contrast = 1;
-int brightness = 0;
+//float contrast = 1;
+//int brightness = 0;
 int threshold = 75;
 boolean useAdaptiveThreshold = false; // use basic thresholding
 int thresholdBlockSize = 500; //489;
@@ -129,8 +133,15 @@ void draw() {
     
     // Load the new frame of our camera in to OpenCV
     opencv.loadImage(kinect.rgbImage());
+    opencv.useColor();
     src = opencv.getSnapshot();
   }
+  
+  /////////////////////
+  /////////////////////
+  // Check detect!!!
+  /////////////////////
+  /////////////////////
   
   detect();
   
@@ -158,6 +169,14 @@ void draw() {
     popMatrix(); 
     
   popMatrix();
+  
+  // Print text if new color expected
+  textSize(18);
+  stroke(255,0,0);
+  fill(255,0,0);
+  
+  text("press the key 'R' and", 10, height-40);
+  text("click to select a color", 10, height-20);
 }
 
 ////////////////////
@@ -166,24 +185,27 @@ void draw() {
 
 void detect() {
   
+  println("detect - " + random(0,100));
+  
   ///////////////////////////////
-  // <1> PRE-PROCESS IMAGE
-  // - Detection channel 
-  // - Brightness / Contrast
+  // <1> SELECT COLOR
   ///////////////////////////////
   
-  // Detection channel
-  if (channel == S) {
-    opencv.useColor(HSB);
-    opencv.setGray(opencv.getS().clone());
-  } else {
-    opencv.gray();
-  }
+  // <3> Tell OpenCV to work in HSV color space.
+  opencv.useColor(HSB);
+  
+  // <4> Copy the Hue channel of our image into 
+  //     the gray channel, which we process.
+  opencv.setGray(opencv.getH().clone());
+  
+  // <5> Filter the image based on the range of 
+  //     hue values that match the object we want to track.
+  opencv.inRange(rangeLow, rangeHigh);
   
   //opencv.brightness(brightness);
-  if (contrast > 1) {
+  /*if (contrast > 1) {
     opencv.contrast(contrast);
-  }
+  }*/
   
   // Save snapshot for display
   preProcessedImage = opencv.getSnapshot();
@@ -206,11 +228,6 @@ void detect() {
   // Basic threshold - range [0, 255]
   } else {
     opencv.threshold(threshold);
-  }
-
-  // Invert (black bg, white blobs)
-  if (channel == GRAY) {
-    opencv.invert();
   }
   
   // Reduce noise - Dilate and erode to close holes
@@ -383,7 +400,7 @@ void displayImages() {
   fill(255);
   textSize(12);
   text("Source", 10, 25); 
-  text("Pre-processed Image", src.width/2 + 10, 25); 
+  text("After color filtering", src.width/2 + 10, 25); 
   text("Processed Image", 10, src.height/2 + 25); 
   text("Tracked Points", src.width/2 + 10, src.height/2 + 25);
 }
@@ -435,23 +452,12 @@ void displayContoursBoundingBoxes() {
 
 void initControls() {
   
-  // Set radio for channel
-  cp5.addRadioButton("changeChannel")
-     .setPosition(20,35)
-     .setSize(10,10)
-     .setItemsPerRow(2)
-     .setSpacingColumn(50)
-     .addItem("GRAY", GRAY)
-     .addItem("SATURATION", S)
-     .activate(S)
-     ;
-  
   // Slider for contrast
-  cp5.addSlider("contrast")
+  /*cp5.addSlider("contrast")
      .setLabel("contrast")
      .setPosition(20,90)
      .setRange(0.0,6.0)
-     ;
+     ;*/
      
   // Slider for threshold
   cp5.addSlider("threshold")
@@ -541,12 +547,8 @@ void initControls() {
      ;
      
   // Store the default background color, we gonna need it later
-  buttonColor = cp5.getController("contrast").getColor().getForeground();
-  buttonBgColor = cp5.getController("contrast").getColor().getBackground();
-}
-
-void changeChannel(int c) {
-  channel = (c >= 0) ? c : S; 
+  //buttonColor = cp5.getController("contrast").getColor().getForeground();
+  //buttonBgColor = cp5.getController("contrast").getColor().getBackground();
 }
 
 void toggleDilateErode(float[] a) {
@@ -603,6 +605,34 @@ void setLock(Controller theController, boolean theValue) {
     theController.setColorBackground(color(buttonBgColor));
     theController.setColorForeground(color(buttonColor));
   }
+}
+
+//////////////////
+// Mouse Events
+//////////////////
+
+void mousePressed() {
+  
+  if (changeColor) {
+    color c = get(mouseX, mouseY);
+    println("r: " + red(c) + " g: " + green(c) + " b: " + blue(c));
+     
+    int hue = int(map(hue(c), 0, 255, 0, 180));
+    println("hue to detect: " + hue);
+    
+    rangeLow = hue - 5;
+    rangeHigh = hue + 5;
+  }
+}
+
+void keyPressed() {
+  if (key == 'r') {
+    changeColor = true;
+  }
+}
+
+void keyReleased() {
+  changeColor = false;
 }
 
 //////////////////
