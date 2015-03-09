@@ -16,9 +16,6 @@
    - Green element proportions (tube vs. plant)
    - Red element proportions (bullet vs. banzai)
    
-   StageDetector:
-   - Unify display() and displayBackground() functions
-   
    P52DGameEngine:
    - clearDynamicBoundaries(): Do we need it?
    - Realtime: Update Mario position but not deleting it (now it needs jumping)
@@ -26,7 +23,7 @@
  
 import SimpleOpenNI.*;
 import gab.opencv.*;
-import BitStage.*;
+import PostingBits.*;
 
 import java.awt.Rectangle;
 
@@ -61,8 +58,8 @@ static int CAPTURE   = 1;
 static int KINECT    = 2;
 int source = KINECT;
 
-// BitDetector vars
-BitStage stage;
+// PostingBits vars
+PostingBits stage;
 ArrayList<StageElement> stageElements;
 
 // Realtime vars
@@ -92,8 +89,8 @@ void setup() {
   
   // IMAGE_SRC
   if (source == IMAGE_SRC) {
-    image = loadImage("data/after4.jpg");
-    stage = new BitStage(this, image.width, image.height);
+    image = loadImage("data/kitchen.jpg");
+    stage = new PostingBits(this, image.width, image.height);
     
     screenWidth = 512;
     screenHeight = 432;
@@ -103,13 +100,13 @@ void setup() {
   } else if (source == CAPTURE) {
     video = new Capture(this, 640, 480);
     video.start();
-    stage = new BitStage(this, 640, 480);
+    stage = new PostingBits(this, 640, 480);
   
   // KINECT
   } else if (source == KINECT) {
     kinect = new SimpleOpenNI(this);
     kinect.enableRGB();
-    stage = new BitStage(this, 640, 480);
+    stage = new PostingBits(this, 640, 480);
   }
   
   // Configure detector
