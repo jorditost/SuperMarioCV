@@ -17,7 +17,7 @@
    - Red element proportions (bullet vs. banzai)
    
    P52DGameEngine:
-   - clearDynamicBoundaries(): Do we need it?
+   - clearDynamicBoundaries(): Only remove these platforms which were removed!!!
    - Realtime: Update Mario position but not deleting it (now it needs jumping)
  */
  
@@ -31,9 +31,10 @@ import processing.opengl.*;
 import processing.video.*;
 
 // Config vars
-static boolean test = false;
-static boolean showOnProjector = true;
-static boolean addExtraDigitalContent = true;
+static boolean test = true;
+static boolean showOnProjector = false;
+static boolean addExtraDigitalContent = false;
+static boolean polygonApproximation = false;
 
 /*void init(){
  if (showOnProjector) {
@@ -56,7 +57,7 @@ SimpleOpenNI kinect;
 static int IMAGE_SRC = 0;
 static int CAPTURE   = 1;
 static int KINECT    = 2;
-int source = KINECT;
+int source = IMAGE_SRC;
 
 // PostingBits vars
 PostingBits stage;
@@ -69,7 +70,7 @@ int t, detectionRate = 1000;
 // Game Engine vars
 float DOWN_FORCE = 2;
 float ACCELERATION = 1.3;
-float DAMPENING = 0.65;//0.5;
+float DAMPENING = 0.65; //0.5
 
 float bulletPeriod = 5000;
 
@@ -89,7 +90,8 @@ void setup() {
   
   // IMAGE_SRC
   if (source == IMAGE_SRC) {
-    image = loadImage("data/kitchen.jpg");
+    //image = loadImage("data/kitchen.jpg");
+    image = loadImage("data/stage-1280x960.jpg");
     stage = new PostingBits(this, image.width, image.height);
     
     screenWidth = 512;
@@ -179,6 +181,7 @@ void draw() {
   }
   
   if (test) {
+    //stage.drawPolygonApproximation();
     //stage.drawStageElements();
     //stage.drawOutputImage();
   }
@@ -339,7 +342,7 @@ class MarioLayer extends LevelLayer {
   float lastDynamicTubeX = -1;
   float lastDynamicTubeY = -1;
   
-  ArrayList<StageElement> dynamicPlatforms;
+  //ArrayList<StageElement> dynamicPlatforms;
   
   //ArrayList<EnemyVector> muncherPositions;
   ArrayList<EnemyVector> banzaiBulletPositions;
@@ -633,8 +636,28 @@ class MarioLayer extends LevelLayer {
           checkBanzaiBullet(stageElement.id, r);
         }
       }
+  
       
-      addDynamicPlatform(r.x, r.y, r.width, r.height);
+      // Polygon Approximation
+      if (polygonApproximation) {
+        Contour c = stageElement.getContour();
+        Contour cApprox = c.getPolygonApproximation();
+        
+        ArrayList<PVector> points = cApprox.getPoints();
+        
+        for (PVector p : points) {
+          p.mult(scaleFactor);
+        }
+        
+        for (int i=0; i<points.size(); i++) {
+          PVector p1 = points.get(i);
+          PVector p2 = (i<points.size()-1) ? points.get(i+1) : points.get(0);
+          addBoundary(new Boundary(p2.x, p2.y, p1.x, p1.y, DYNAMIC));
+        }
+        
+      } else {
+        addDynamicPlatform(r.x, r.y, r.width, r.height);      
+      }
       
       // Check tube
       /*if (stageElement.getTrackingColor() == TrackingColor.GREEN) {
