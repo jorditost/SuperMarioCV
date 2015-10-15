@@ -26,7 +26,7 @@ import controlP5.*;
 static int IMAGE_SRC = 0;
 static int CAPTURE   = 1;
 static int KINECT    = 2;
-int source = KINECT;
+int source = CAPTURE;
 
 public static final int GRAY = 0;
 public static final int S    = 1;
@@ -73,7 +73,7 @@ int buttonColor;
 int buttonBgColor;
 
 void setup() {
-  frameRate(15);
+  frameRate(30);
   
   // IMAGE_SRC
   if (source == IMAGE_SRC) {
@@ -83,7 +83,7 @@ void setup() {
   // CAPTURE
   } else if (source == CAPTURE) {
     printCameras();
-    video = new Capture(this, 640, 480, "USB 2.0 Camera");
+    video = new Capture(this, 640, 480);
     video.start();
     opencv = new OpenCV(this, video.width, video.height);
   

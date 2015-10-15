@@ -21,7 +21,7 @@ static class SoundManager {
   private static HashMap<Object,AudioPlayer> owners;
   private static HashMap<String,AudioPlayer> audioplayers;
 
-  private static boolean muted = true, draw_controls = false;
+  private static boolean muted = false, draw_controls = false;
   private static float draw_x, draw_y;
   private static PImage mute_overlay, unmute_overlay, volume_overlay;
   

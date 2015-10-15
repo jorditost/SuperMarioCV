@@ -90,8 +90,8 @@ void setup() {
   
   // IMAGE_SRC
   if (source == IMAGE_SRC) {
-    //image = loadImage("data/kitchen.jpg");
-    image = loadImage("data/stage-1280x960.jpg");
+    image = loadImage("data/kitchen.jpg");
+    //image = loadImage("data/stage-1280x960.jpg");
     stage = new PostingBits(this, image.width, image.height);
     
     screenWidth = 512;
@@ -115,9 +115,9 @@ void setup() {
   stage.setThreshold(115); // 90
   
   // Color Tracking
-  //stage.useColorTracking();
+  stage.useColorTracking();
   //stage.useColorTracking(163, -100, true, 20, 170);
-  //stage.detectRed(8);  //166;
+  stage.detectRed(165);  //166;
   //stage.detectGreen(44); //37;
   //stage.detectBlue(105); //104;
   
@@ -611,7 +611,7 @@ class MarioLayer extends LevelLayer {
       
       // It's new: do something and set it as initialized
       if (stageElement.isNew()) {
-        PApplet.println("new " + trackingColor.displayName() + " stage element! " + Math.random());
+        //PApplet.println("new " + trackingColor.displayName() + " stage element! " + Math.random());
         
         // RED Elements
         if (stageElement.getTrackingColor() == TrackingColor.RED) {
@@ -1149,6 +1149,8 @@ class Mario extends Player {
     //setForces(0,3);
     
     isDying = true;
+    
+    SoundManager.play(active);
   }
   
   void resurrect() {

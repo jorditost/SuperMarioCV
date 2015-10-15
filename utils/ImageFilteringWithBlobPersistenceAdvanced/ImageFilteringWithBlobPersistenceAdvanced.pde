@@ -26,7 +26,7 @@ import controlP5.*;
 static int IMAGE_SRC = 0;
 static int CAPTURE   = 1;
 static int KINECT    = 2;
-int source = KINECT;
+int source = IMAGE_SRC;
 
 public static final int GRAY = 0;
 public static final int S    = 1;
