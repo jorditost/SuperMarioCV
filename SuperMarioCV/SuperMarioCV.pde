@@ -44,6 +44,10 @@ static boolean polygonApproximation = false;
  }
 }*/
 
+boolean sketchFullScreen() {
+  return showOnProjector;
+}
+
 int screenWidth = 800;
 int screenHeight = 600;
 int backgroundColor = 255;
@@ -66,6 +70,7 @@ ArrayList<StageElement> stageElements;
 // Realtime vars
 Boolean realtimeDetect = true;
 int t, detectionRate = 1000;
+int counter = 0;
 
 // Game Engine vars
 float DOWN_FORCE = 2;
@@ -112,14 +117,17 @@ void setup() {
   }
   
   // Configure detector
-  stage.setThreshold(115); // 90
+  //stage.setContrast(1.15); // 1.15
+  stage.setThreshold(60);  // 72
+  stage.setDilate(true);   // true
+  stage.setMinBlobSize(16);
   
   // Color Tracking
   stage.useColorTracking();
   //stage.useColorTracking(163, -100, true, 20, 170);
   stage.detectRed(165);  //166;
   //stage.detectGreen(44); //37;
-  //stage.detectBlue(105); //104;
+  //stage.detectBlue(101); //104;
   
   // List all filter values
   stage.listFilterValues();
@@ -129,8 +137,16 @@ void setup() {
   screenHeight = int(scaleFactor*stage.height);
   
   // Processing 2.0 breaks in OPENGL mode with Kinect
-  size(screenWidth, screenHeight);
-  //size(screenWidth, screenHeight, OPENGL);
+  if (showOnProjector) {
+    size(displayWidth, displayHeight);
+  } else {
+    size(screenWidth, screenHeight);
+    //size(screenWidth, screenHeight, OPENGL);
+  }
+  
+  if (frame != null) {
+    frame.setResizable(false);
+  }
   
   // set location - needs to be in setup()
   // set x parameter depending on the resolution of your 1st screen
@@ -158,6 +174,8 @@ void draw() {
     detectStage();
     updateGameStage();
     t = millis();
+    
+    counter++;
   }
   
   pushMatrix();
@@ -191,6 +209,13 @@ void draw() {
   // to do
   activeScreen.draw(); 
   SoundManager.draw();
+
+  // Print text if new color expected
+  stroke(0,0,0);
+  fill(0,0,0);
+  
+  textSize(48);
+  text(counter, 40, 70);
 }
 
 /////////////////////
@@ -242,6 +267,8 @@ void setupGameEngine() {
 void initializeGame() {
   marioLevel = new MarioLevel(width, height, stageElements);
   addScreen("level", marioLevel);
+  
+  counter = 0;
 }
 
 void resetGame() {
@@ -415,8 +442,9 @@ class MarioLayer extends LevelLayer {
     
     // the ground now has an unjumpable gap:
     if (!addExtraDigitalContent) {
-      addStaticPlatform(0, height-75, 280, height);
-      addStaticPlatform(width-260, height-70, width, height);
+      addStaticPlatform(0, height-1, 300, height);
+      addStaticPlatform(width-465, height-1, width, height);
+      addStaticPlatform(width-195, height-80, width, height);
       
       // Add blocks
       addBlocks(160, height-130, 5, 1);

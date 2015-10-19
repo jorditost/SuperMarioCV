@@ -127,7 +127,7 @@ class BanzaiBullet extends MarioEnemy {
     setAcceleration(0, 0);
     setupStates();
     // Banzai Bills do not care about boundaries or NPCs!
-    setPlayerInteractionOnly(true);
+    setPlayerInteractionOnly(false);
     persistent = false;
   }
 
