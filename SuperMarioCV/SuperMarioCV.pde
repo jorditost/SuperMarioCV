@@ -30,10 +30,10 @@ import java.awt.Rectangle;
 import processing.opengl.*;
 import processing.video.*;
 
-// Config vars
-static boolean test = true;
-static boolean showOnProjector = false;
-static boolean addExtraDigitalContent = false;
+// Config vwwars
+static boolean test = false;
+static boolean showOnProjector = true;
+static boolean addExtraDigitalContent = true;
 static boolean polygonApproximation = false;
 
 /*void init(){
@@ -43,6 +43,10 @@ static boolean polygonApproximation = false;
    super.init();
  }
 }*/
+
+boolean sketchFullScreen() {
+  return showOnProjector;
+}
 
 int screenWidth = 800;
 int screenHeight = 600;
@@ -57,7 +61,7 @@ SimpleOpenNI kinect;
 static int IMAGE_SRC = 0;
 static int CAPTURE   = 1;
 static int KINECT    = 2;
-int source = IMAGE_SRC;
+int source = KINECT;
 
 // PostingBits vars
 PostingBits stage;
@@ -66,6 +70,7 @@ ArrayList<StageElement> stageElements;
 // Realtime vars
 Boolean realtimeDetect = true;
 int t, detectionRate = 1000;
+//int counter = 0;
 
 // Game Engine vars
 float DOWN_FORCE = 2;
@@ -112,14 +117,18 @@ void setup() {
   }
   
   // Configure detector
-  stage.setThreshold(115); // 90
+  //stage.setContrast(1.15); // 1.15
+  stage.setThreshold(75); //115;
+  //stage.setDilate(false);
+  //stage.setMinBlobSize(20);
+  //stage.setMinBlobSize(200);
   
   // Color Tracking
   stage.useColorTracking();
   //stage.useColorTracking(163, -100, true, 20, 170);
   stage.detectRed(165);  //166;
   //stage.detectGreen(44); //37;
-  //stage.detectBlue(105); //104;
+  //stage.detectBlue(101); //104;
   
   // List all filter values
   stage.listFilterValues();
@@ -129,8 +138,16 @@ void setup() {
   screenHeight = int(scaleFactor*stage.height);
   
   // Processing 2.0 breaks in OPENGL mode with Kinect
-  size(screenWidth, screenHeight);
-  //size(screenWidth, screenHeight, OPENGL);
+  if (showOnProjector) {
+    size(displayWidth, displayHeight);
+  } else {
+    size(screenWidth, screenHeight);
+    //size(screenWidth, screenHeight, OPENGL);
+  }
+  
+  if (frame != null) {
+    frame.setResizable(false);
+  }
   
   // set location - needs to be in setup()
   // set x parameter depending on the resolution of your 1st screen
@@ -158,6 +175,8 @@ void draw() {
     detectStage();
     updateGameStage();
     t = millis();
+    
+    //counter++;
   }
   
   pushMatrix();
@@ -191,6 +210,13 @@ void draw() {
   // to do
   activeScreen.draw(); 
   SoundManager.draw();
+
+  // Print text if new color expected
+  /*stroke(0,0,0);
+  fill(0,0,0);
+  
+  textSize(48);
+  text(counter, 40, 70);*/
 }
 
 /////////////////////
@@ -242,6 +268,8 @@ void setupGameEngine() {
 void initializeGame() {
   marioLevel = new MarioLevel(width, height, stageElements);
   addScreen("level", marioLevel);
+  
+  //counter = 0;
 }
 
 void resetGame() {
@@ -277,6 +305,14 @@ void keyPressed() {
   } else if (key == BACKSPACE) {
     detectStage();
     resetGame();
+  
+  // Test mode
+  } else if (key == 'd' || key == 'D') {
+    test = !test;
+  
+  // Background color
+  } else if (key == 'c' || key == 'C') {
+    backgroundColor = (backgroundColor == 255) ? 0 : 255;
   }
 }
 
@@ -361,7 +397,7 @@ class MarioLayer extends LevelLayer {
     // Hardcoded interactive elements (coins, koopas)
     addInteractiveElements();
 
-    if (test) showBoundaries = true;
+    showBoundaries = test;
     mario = new Mario(marioStartX, marioStartY);
     addPlayer(mario);
   }
@@ -376,6 +412,8 @@ class MarioLayer extends LevelLayer {
     //clearExceptPlayer();
     
     mario.updatePosition();
+    
+    showBoundaries = test;
     
     // Add static platforms (walls, ground, etc.)
     addStaticPlatforms();
@@ -401,7 +439,7 @@ class MarioLayer extends LevelLayer {
     super.draw();
     
     // Die
-    if (mario.y > height && !mario.isDying) {
+    if (mario.y > height+20 && !mario.isDying) {
       mario.die();
     }
   }
@@ -414,29 +452,46 @@ class MarioLayer extends LevelLayer {
     addBoundary(new Boundary(width+1, height, width+1, 0, STATIC));
     
     // the ground now has an unjumpable gap:
-    if (!addExtraDigitalContent) {
-      addStaticPlatform(0, height-75, 280, height);
-      addStaticPlatform(width-260, height-70, width, height);
+    //if (!addExtraDigitalContent) {
+      
+      // Ground (tables)
+      addStaticPlatform(0, height, 554, height);
+      addStaticPlatform(width-200, height, width, height);
+      
+      //addStaticPlatform(0, height, 790, height);
+      //addStaticPlatform(width-465, height-3, width, height);
+      
+      //addStaticPlatform(width-175, height-80, width, height);
+      
+      // Schalter
+      addStaticPlatform(205, height-135, 50, 50);
+      
+      // Bild
+      addStaticPlatform(432, height-450, 150, 10);
+      addStaticPlatform(432, height-617, 170, 10);
+      //addStaticPlatform(432, height-617, 10, 170);
+      //addStaticPlatform(432+165, height-617, 10, 170);
       
       // Add blocks
-      addBlocks(160, height-130, 5, 1);
+      //addBlocks(100, height-180, 5, 1);
     
       // Add U-Blocks
-      addClouds(width/2+15, 20, 4, 1);
-      addClouds(width/2+15, 20+16, 1, 3);
-      addClouds(width/2+15+(3*16), 20+16, 1, 3);
+      addClouds(width/2-40, 20, 4, 1);
+      addClouds(width/2-40, 20+16, 1, 3);
+      addClouds(width/2-40+(3*16), 20+16, 1, 3);
     
-      return;
-    }
+      //return;
+    //}
     
     // Add Tubes
-    //addStaticTube(124, height-350);
-    //addDynamicTube(965, height-151, 40, 65);
+    addStaticTube(490, height-450);
+    //addCoins(515,height-520,12);
+    addDynamicTube(width-30, height-36, 30, 35); //addDynamicTube(965, height-151, 40, 65);
     
     ///////////////////////////////////////////////////////////////////////////////////
     
     // Tisch / Boden-Platform
-    addStaticPlatform(0, height-1, 490, height);                  //
+    //addStaticPlatform(0, height-1, 490, height);                  //
     //addStaticPlatform(width-380, height-80, width, height);        //
     
     // MARIO 1 ZITAT W1-1 
@@ -460,11 +515,11 @@ class MarioLayer extends LevelLayer {
     // MARIO 3 ZITAT W1-1    
     //addStaticPlatform(520, height-352, 64, 16);        // Kurz
     
-    addBlocks(600, height-400, 13, 1);
+    //addBlocks(600, height-400, 13, 1);
     //addStaticPlatform(600, height-400, 208, 16);       // Lang
     
     // FREE LEVEL RÄTSEL    
-    addClouds(622, height-516, 4, 1);
+    //addClouds(622, height-516, 4, 1);
     addClouds(734, height-516, 12, 1);
     addClouds(734, height-532, 1, 1);
     addClouds(910, height-532, 1, 1);
@@ -477,18 +532,18 @@ class MarioLayer extends LevelLayer {
 
     // n-FORM      
     //addStaticPlatform(396,80,112, 16);                 // DACH
-    addClouds(396,96, 1, 6);                 // Wände
-    addClouds(492,96, 1, 6);                 // Wände
+    //addClouds(396,96, 1, 6);                 // Wände
+    //addClouds(492,96, 1, 6);                 // Wände
   
     addClouds( 32, height-430, 2, 1);        // links vom Bild  
     
     // 3 aus 5  
     //addStaticPlatform(132, 36, 800, 16);           // Lang oben links  
-    addClouds( 66, 108,  1, 1);          // Block links
-    addClouds(132, 108,  1, 1);          // Block links
-    addClouds(198, 108,  1, 1);          // Block links
-    addClouds(264, 108,  1, 1);          // Block links
-    addClouds(330, 108,  1, 1);          // Block links 
+    addClouds( 66, 158,  1, 1);          // Block links
+    addClouds(132, 158,  1, 1);          // Block links
+    addClouds(198, 158,  1, 1);          // Block links
+    addClouds(264, 158,  1, 1);          // Block links
+    addClouds(330, 158,  1, 1);          // Block links 
     
     // REALFAKE Platform //////////////////////////////////////
 
@@ -512,6 +567,9 @@ class MarioLayer extends LevelLayer {
   
   void addInteractiveElements() {
     
+    //BanzaiBill banzaiBill = new BanzaiBill(0, height-332);
+    //addInteractor(banzaiBill);
+    
     // Single Mario Zitat W1-1
     addCoins(116,height-251,12);
     CoinsTrigger coinsTrigger1 = new CoinsTrigger(1, 116+12, height-251);
@@ -520,19 +578,19 @@ class MarioLayer extends LevelLayer {
     // Add Enemies  
     
     // Erster Koopa     // +34
-    Koopa koopa1 = new Koopa(180, height-94);         // Erster links
+    Koopa koopa1 = new Koopa(360, height-100);         // Erster links
     addInteractor(koopa1);
     
     // Koopa rechts unten    
-    //Koopa koopa3 = new Koopa(width-148, height-94);    // Unten rechts
-    //addInteractor(koopa3);
+    Koopa koopa3 = new Koopa(width-148, height-600);    // Unten rechts
+    addInteractor(koopa3);
     
     // Koopa rechts mitte    
-    Koopa koopa2 = new Koopa(width-128, height-314);   // Mitte rechts
+    Koopa koopa2 = new Koopa(500, height-100);   // Mitte rechts
     addInteractor(koopa2);
     
     // Kooper links oben    
-    Koopa koopa4 = new Koopa(width-128, height-532);   // Oben rechts
+    Koopa koopa4 = new Koopa(width-140, height-400);   // Oben rechts
     addInteractor(koopa4);
   }
   
@@ -544,17 +602,23 @@ class MarioLayer extends LevelLayer {
       addCoins(284,height-179,64);   // Postkarte COINS
       CoinsTrigger coinsTrigger2 = new CoinsTrigger(2, 284+52, height-171);
       addTrigger(coinsTrigger2);
+      
+      CoinsTrigger banzaiTrigger = new CoinsTrigger(99999, 284, height-179);
+      addTrigger(banzaiTrigger);
     
     } else if (id == 2) {
       
-      addCoins(530,height-119,64);   // Abgrund
-      CoinsTrigger coinsTrigger3 = new CoinsTrigger(3, 530+64, height-119);
+      addCoins(width-100,height-120,64);   // Abgrund
+      CoinsTrigger coinsTrigger3 = new CoinsTrigger(3, width-100+64, height-119);
       addTrigger(coinsTrigger3);
+      
+      CoinsTrigger banzaiTrigger1 = new CoinsTrigger(9999, width-100+64, height-119);
+      addTrigger(banzaiTrigger1);
     
     } else if (id == 3) {
       
-      addCoins(600,height-448,24);   // Mario 3 W1-1 Zitat
-      addCoins(648,height-432,50);   //
+      //addCoins(600,height-448,24);   // Mario 3 W1-1 Zitat
+      //addCoins(648,height-432,50);   //
       addCoins(728,height-448,50);   // Mario 3 W1-1 Zitat
       
       addCoins(810,height-416,12);   // Mario 3 W1-1 Zitat
@@ -563,23 +627,32 @@ class MarioLayer extends LevelLayer {
       addCoins(890,height-464,12);   //
       addCoins(922,height-432,12);   // Mario 3 W1-1 Zitat
       
-      addCoins(width-52,height-332,24);
-      addCoins(width-52,height-352,24);
-      addCoins(width-52,height-372,24);
-      addCoins(width-52,height-392,24);
-      addCoins(width-52,height-412,24);
-      addCoins(width-52,height-432,24);
-      addCoins(width-52,height-452,24);
-      addCoins(width-52,height-472,24);
+      addCoins(width-42,height-332,24);
+      addCoins(width-42,height-352,24);
+      addCoins(width-42,height-372,24);
+      addCoins(width-42,height-392,24);
+      addCoins(width-42,height-412,24);
+      addCoins(width-42,height-432,24);
+      addCoins(width-42,height-452,24);
+      addCoins(width-42,height-472,24);
       
-      CoinsTrigger coinsTrigger4 = new CoinsTrigger(4, 600,height-448);
+      // Banzai Trigger
+      CoinsTrigger banzaiTrigger = new CoinsTrigger(99, width-42+15,height-332);
+      addTrigger(banzaiTrigger);
+      
+      CoinsTrigger coinsTrigger4 = new CoinsTrigger(4, 728,height-448);
+      //CoinsTrigger coinsTrigger4 = new CoinsTrigger(4, 600,height-448);
       addTrigger(coinsTrigger4);
     
     } else if (id == 4) {
       
-       addCoins(232,height-428,12);   // im Bild
-       CoinsTrigger coinsTrigger5 = new CoinsTrigger(5, 232, height-428);
+       addCoins(515,height-520,12);
+       //addCoins(232,height-428,12);   // im Bild
+       CoinsTrigger coinsTrigger5 = new CoinsTrigger(5, 515+8, height-520);
        addTrigger(coinsTrigger5);
+       
+       CoinsTrigger banzaiTrigger2 = new CoinsTrigger(999, 515+8, height-520);
+       addTrigger(banzaiTrigger2);
        
     } else if (id == 5) {
       
@@ -591,11 +664,28 @@ class MarioLayer extends LevelLayer {
       addCoins(264, 146, 16);          // Block 4 links
       addCoins(330, 90, 16);          // Block 5 links 
       
-      // Wolken 'n' COINS    
-      addCoins(436,122,26);
-      addCoins(436,142,26);
+      // Wolken 'n' COINS
+      addCoins(width/2-15,55,12);
+      addCoins(width/2-15,75,12);
+      //addCoins(436,122,26);
+      //addCoins(436,142,26);
       
       addCoins(32, height-400, 24);  // links vom Bild
+    }
+    
+    // Enemies
+    if (id == 99) {
+      BanzaiBill banzaiBill = new BanzaiBill(0, height-332);
+      addInteractor(banzaiBill);
+    } else if (id == 999) {
+      BanzaiBill banzaiBill2 = new BanzaiBill(width, height-428);
+      addInteractor(banzaiBill2);
+    } else if (id == 9999) {
+      BanzaiBill banzaiBill3 = new BanzaiBill(width, height-150);
+      addInteractor(banzaiBill3);
+    } else if (id == 99999) {
+      BanzaiBill banzaiBill4 = new BanzaiBill(width, height-179);
+      addInteractor(banzaiBill4);
     }
   }
   
@@ -605,6 +695,11 @@ class MarioLayer extends LevelLayer {
       
       // Get bounding box's scaled version
       Rectangle r = TransformUtils.scaleBoundingBox(stageElement.getBoundingBox(), scaleFactor);
+      
+      if (r.x < 40 && r.y > height-46) {
+        continue;
+        //addDynamicTube(30, height-36, 30, 35);
+      }
       
       // Get tracking color
       TrackingColor trackingColor = stageElement.getTrackingColor();

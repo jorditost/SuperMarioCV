@@ -47,13 +47,13 @@ class BanzaiBill extends MarioEnemy {
     //setPosition(mx, my);
     //setImpulse(-1, 0);
     
-    if (mx < screenWidth/2) {
+    if (mx > screenWidth/2) {
       setPosition(screenWidth+22, my);
-      setImpulse(-2, 0);
+      setImpulse(-4, 0);
       setHorizontalFlip(false);
     } else {
       setPosition(-22, my);
-      setImpulse(2, 0);
+      setImpulse(4, 0);
       setHorizontalFlip(true);
     }
     
