@@ -1,12 +1,12 @@
-/**
- * SuperMarioCV
+ /**
+ * SuperMarioCV meets tangio
  *
  * @Author: Jordi Tost @jorditost
  * @Author URI: jorditost.com
  *
- * University of Applied Sciences Potsdam, 2014
+ * University of Applied Sciences Potsdam, 2016
  */
-
+ 
 /*
    TO DOs
    =======
@@ -30,23 +30,24 @@ import java.awt.Rectangle;
 import processing.opengl.*;
 import processing.video.*;
 
-// Config vwwars
+// Config vars
 static boolean test = false;
-static boolean showOnProjector = true;
-static boolean addExtraDigitalContent = true;
+static boolean showOnProjector = false;
+boolean sketchFullScreen() { return showOnProjector; }
+
+// Detection
+boolean realtimeDetect = true;
+static boolean detectPhysicalPlatforms = false;
 static boolean polygonApproximation = false;
 
-/*void init(){
- if (showOnProjector) {
-   frame.dispose();  
-   frame.setUndecorated(true);
-   super.init();
- }
-}*/
+// Extra digital content
+static boolean addExtraDigitalContent = true;
 
-boolean sketchFullScreen() {
-  return showOnProjector;
-}
+// Source
+static int IMAGE_SRC = 0;
+static int CAPTURE   = 1;
+static int KINECT    = 2;
+int source = IMAGE_SRC;
 
 int screenWidth = 800;
 int screenHeight = 600;
@@ -58,17 +59,11 @@ PImage image;
 Capture video;
 SimpleOpenNI kinect;
 
-static int IMAGE_SRC = 0;
-static int CAPTURE   = 1;
-static int KINECT    = 2;
-int source = KINECT;
-
 // PostingBits vars
 PostingBits stage;
 ArrayList<StageElement> stageElements;
 
-// Realtime vars
-Boolean realtimeDetect = true;
+// Detection rate
 int t, detectionRate = 1000;
 //int counter = 0;
 
@@ -142,18 +137,11 @@ void setup() {
     size(displayWidth, displayHeight);
   } else {
     size(screenWidth, screenHeight);
-    //size(screenWidth, screenHeight, OPENGL);
   }
   
   if (frame != null) {
     frame.setResizable(false);
   }
-  
-  // set location - needs to be in setup()
-  // set x parameter depending on the resolution of your 1st screen
-  /*if (showOnProjector) {
-    frame.setLocation(1440,0);
-  }*/
     
   noLoop();
   
@@ -161,9 +149,14 @@ void setup() {
 
   // Setup Game Engine
   setupGameEngine();
-
-  // Detect stage elements and initialize game
-  detectStage();
+  
+  // Reload input images
+  loadStageImage();
+  
+  // Detect stage elements
+  if (detectPhysicalPlatforms) detectStage();
+   
+  // Initialize game
   initializeGame();
 }
 
@@ -171,12 +164,10 @@ void setup() {
 void draw() {
   
   // Realtime detection for
-  if (realtimeDetect && (millis() - t >= detectionRate)) {
+  if (detectPhysicalPlatforms && realtimeDetect && (millis() - t >= detectionRate)) {
     detectStage();
     updateGameStage();
     t = millis();
-    
-    //counter++;
   }
   
   pushMatrix();
@@ -194,8 +185,7 @@ void draw() {
     stage.drawBackground();
     //noStroke();
     //fill(backgroundColor);
-    //rect(0,0,width,height);
-    
+    //rect(0,0,width,height);    
     //stage.drawStageElements();
   }
   
@@ -223,11 +213,8 @@ void draw() {
 // Detect Funtions
 /////////////////////
 
-void detectStage() {
-  
-  //ArrayList<StageElement> tempStageElements = new ArrayList<StageElement>();
-  
-  // 1. Load source images
+// 1. Load source images
+void loadStageImage() {
   
   // IMAGE
   if (source == IMAGE_SRC) {
@@ -246,8 +233,10 @@ void detectStage() {
     kinect.update();
     stage.loadImage(kinect.rgbImage());
   }
-  
-  // 2. Detect stage elements
+}
+
+// 2. Detect stage elements
+void detectStage() {
   //ArrayList<StageElement> tempStageElements = stage.detect();  
   //stageElements = TransformUtils.scaleStageElementsArray(tempStageElements, scaleFactor);
   stageElements = stage.detect();
@@ -276,8 +265,10 @@ void resetGame() {
   clearScreens();
   
   // Set all objects as new
-  for (StageElement stageElement : stageElements) {
-    stageElement.setInitialized(false);
+  if (stageElements != null) {
+    for (StageElement stageElement : stageElements) {
+      stageElement.setInitialized(false);
+    }
   }
   
   // Initialize game
@@ -296,14 +287,20 @@ void keyPressed() {
   activeScreen.keyPressed(key, keyCode); 
   
   // Detect stage
-  if (key == ENTER) {
-      detectStage();
-      updateGameStage();
-      t = millis();
+  if (key == ENTER && detectPhysicalPlatforms) {
+      
+    // Reload input images
+    loadStageImage();
+    detectStage();
+    updateGameStage();
+    t = millis();
   
   // Reset Game
   } else if (key == BACKSPACE) {
-    detectStage();
+    // Reload input images
+    loadStageImage();
+    
+    if (detectPhysicalPlatforms) detectStage();
     resetGame();
   
   // Test mode
@@ -691,6 +688,9 @@ class MarioLayer extends LevelLayer {
   
   // Add all level platforms given a rectangles array
   void addDynamicPlatforms(ArrayList<StageElement> platformsArray) {
+    
+    if (platformsArray == null) return;
+    
     for (StageElement stageElement : platformsArray) {
       
       // Get bounding box's scaled version
@@ -1356,4 +1356,5 @@ class Mario extends Player {
     }
   }
 }
+
 
